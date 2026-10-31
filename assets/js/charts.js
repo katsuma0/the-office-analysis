@@ -28,7 +28,12 @@ export function mount(el, draw) {
     draw(el, w);
   };
   run();
-  new ResizeObserver(() => requestAnimationFrame(run)).observe(el);
+  const ro = new ResizeObserver(() => requestAnimationFrame(() => {
+    // The chart's page was replaced; stop watching it.
+    if (!el.isConnected) { ro.disconnect(); return; }
+    run();
+  }));
+  ro.observe(el);
 }
 
 export function epTip(e, extra = '') {
@@ -77,7 +82,7 @@ export function skyline(el, D) {
     el.querySelector('svg').classList.add('skyline');
     el.querySelectorAll('.bar').forEach((n) => {
       const e = eps[+n.dataset.i];
-      hover(n, () => epTip(e, `<div class="tm" style="margin-top:6px">Tap again to open</div>`), `#/episode/${e.id}`);
+      hover(n, () => epTip(e), `#/episode/${e.id}`);
     });
   });
 }
@@ -99,7 +104,7 @@ export function spark(eps, W = 180, H = 46) {
 
 // ---------------------------------------------------------------- lollipops: one season's episodes
 
-export function lollipops(el, eps, { avg, showAvg = true, yMin = 6, label = 'Episode ratings' } = {}) {
+export function lollipops(el, eps, { avg, showAvg = true, yMin = 6, label = 'Episode ratings', xLabel = (e) => e.se.split('-')[0] } = {}) {
   mount(el, (el, W) => {
     const H = 280, m = { t: 24, r: 10, b: 30, l: 30 };
     const lo = Math.min(yMin, Math.floor(Math.min(...eps.map((e) => e.r)) - 0.2));
@@ -117,14 +122,14 @@ export function lollipops(el, eps, { avg, showAvg = true, yMin = 6, label = 'Epi
         <circle class="pop" cx="${cx}" cy="${y(e.r)}" r="${step > 22 ? 6 : 4.5}" style="fill:${isBest ? 'var(--accent)' : 'var(--surface)'};stroke:var(--accent);--d:${0.3 + i * 0.03}s" stroke-width="2"/>
         <rect class="hit" x="${cx - step / 2}" y="${m.t - 10}" width="${step}" height="${H - m.t - m.b + 10}"/>
       </g>`;
-      if (step > 18 || i % Math.ceil(18 / step) === 0) body += `<text x="${cx}" y="${H - 10}" text-anchor="middle">${e.e}</text>`;
+      if (step > 18 || i % Math.ceil(18 / step) === 0) body += `<text x="${cx}" y="${H - 10}" text-anchor="middle">${xLabel(e)}</text>`;
     });
     const bi = eps.indexOf(best);
     const anchor = bi < eps.length / 2 ? 'start' : 'end';
     body += `<text class="lbl-strong" x="${x(bi) + (anchor === 'start' ? 10 : -10)}" y="${y(best.r) - 8}" text-anchor="${anchor}">${esc(best.t)} · ${best.r.toFixed(1)}</text>`;
     if (showAvg && avg) {
-      body += `<line class="avgline draw" x1="${m.l}" x2="${W - m.r}" y1="${y(avg)}" y2="${y(avg)}" style="--len:${W};--d:.6s" stroke-dasharray="${W}"/>
-      <text x="${m.l + 6}" y="${y(avg) + 15}" class="lbl">Average ${avg.toFixed(2)}</text>`;
+      body += `<line class="avgline draw" x1="${m.l}" x2="${W - m.r}" y1="${y(avg)}" y2="${y(avg)}" pathLength="1" style="--d:.6s"/>
+      <text x="${W - m.r}" y="${y(avg) + 16}" text-anchor="end" class="lbl-strong">Average ${avg.toFixed(2)}</text>`;
     }
     el.innerHTML = svg(W, H, body, label);
     bind(el, '.mark', eps, (e) => epTip(e, `<div class="tr"><span>Lines</span><b>${fmt.int(e.lines)}</b></div><div class="tr"><span>Directed by</span><b>${esc(e.dir.join(', '))}</b></div>`), (e) => `#/episode/${e.id}`);
@@ -133,12 +138,13 @@ export function lollipops(el, eps, { avg, showAvg = true, yMin = 6, label = 'Epi
 
 // ---------------------------------------------------------------- line over every episode with an event marker
 
-export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1), yDomain = [6, 10], marker, eras = true, window = 9, label = 'Rating over time', height = 320, highlight } = {}) {
+export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1), yDomain = [6, 10], marker, eras = true, window = 9, label = 'Rating over time', height = 320, exclude = [] } = {}) {
   const eps = D.episodes;
   mount(el, (el, W) => {
-    const H = height, m = { t: 30, r: 12, b: 30, l: 36 };
+    const H = height, m = { t: 30, r: 12, b: 30, l: 40 };
     const x = lin(0, eps.length - 1, m.l, W - m.r);
     const y = lin(yDomain[0], yDomain[1], H - m.b, m.t);
+    const clamp = (v) => Math.max(yDomain[0], Math.min(yDomain[1], v));
     let body = '';
     for (const t of ticks(yDomain[0], yDomain[1], 4)) body += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmtv(t)}</text>`;
     D.seasons.forEach((s) => {
@@ -151,25 +157,25 @@ export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1)
       body += `<line x1="${mx}" x2="${mx}" y1="${m.t - 14}" y2="${H - m.b}" stroke="var(--ink)" stroke-width="1"/>
         <text class="lbl-strong" x="${mx + (mx > W * 0.7 ? -8 : 8)}" y="${m.t - 4}" text-anchor="${mx > W * 0.7 ? 'end' : 'start'}">Michael leaves</text>`;
     }
-    // dots, faint
     eps.forEach((e, i) => {
       const v = value(e);
       if (v == null) return;
       const pre = marker == null || i <= marker;
-      const hl = highlight ? highlight(e) : false;
-      body += `<circle class="mark pop" data-i="${i}" cx="${x(i).toFixed(1)}" cy="${y(Math.min(yDomain[1], v)).toFixed(1)}" r="${hl ? 4.5 : 3}" style="fill:${hl ? 'var(--c-dwight)' : pre ? 'var(--accent)' : 'var(--ink-3)'};opacity:${hl ? 1 : 0.55};--d:${(i * 0.004).toFixed(3)}s"/>`;
+      body += `<circle class="mark pop" data-i="${i}" cx="${x(i).toFixed(1)}" cy="${y(clamp(v)).toFixed(1)}" r="3" style="fill:${pre ? 'var(--accent)' : 'var(--ink-3)'};opacity:.55;--d:${(i * 0.004).toFixed(3)}s"/>`;
     });
-    // rolling mean
+    // Moving average, computed separately on each side of the marker so it doesn't smooth away the step it's showing.
     const half = Math.floor(window / 2);
-    const roll = eps.map((_, i) => {
-      const a = Math.max(0, i - half), b = Math.min(eps.length, i + half + 1);
-      const vals = eps.slice(a, b).map(value).filter((v) => v != null);
-      return vals.reduce((s, v) => s + v, 0) / vals.length;
-    });
-    const d = roll.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-    body += `<path class="draw" d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" style="--len:${W * 2}" stroke-dasharray="${W * 2}"/>`;
+    const segments = marker != null ? [[0, marker], [marker + 1, eps.length - 1]] : [[0, eps.length - 1]];
+    for (const [a0, b0] of segments) {
+      const pts = [];
+      for (let i = a0; i <= b0; i++) {
+        const vals = eps.slice(Math.max(a0, i - half), Math.min(b0, i + half) + 1).filter((e) => !exclude.includes(e.id)).map(value).filter((v) => v != null);
+        if (vals.length) pts.push([x(i), y(clamp(vals.reduce((s, v) => s + v, 0) / vals.length))]);
+      }
+      body += `<path class="draw" d="${pts.map(([px, py], k) => `${k ? 'L' : 'M'}${px.toFixed(1)},${py.toFixed(1)}`).join('')}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" pathLength="1"/>`;
+    }
     if (eras && marker != null) {
-      const avg = (arr) => arr.reduce((s, e) => s + value(e), 0) / arr.length;
+      const avg = (arr) => { const v = arr.filter((e) => !exclude.includes(e.id)).map(value); return v.reduce((s, x2) => s + x2, 0) / v.length; };
       const a = avg(eps.slice(0, marker + 1)), b = avg(eps.slice(marker + 1));
       body += `<line x1="${x(0)}" x2="${x(marker)}" y1="${y(a)}" y2="${y(a)}" stroke="var(--accent)" stroke-width="2"/>
         <text class="lbl-strong" x="${x(2)}" y="${y(a) - 8}">${fmtv(a)} avg</text>
@@ -177,13 +183,15 @@ export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1)
         <text class="lbl-strong" x="${x(eps.length - 1)}" y="${y(b) + 18}" text-anchor="end">${fmtv(b)} avg</text>`;
     }
     body += `<line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" style="opacity:0"/>`;
-    body += `<rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}"/>`;
+    body += `<rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" style="touch-action:pan-y"/>`;
     el.innerHTML = svg(W, H, body, label);
-    // crosshair: nearest episode by x
+    // Crosshair on the nearest episode. Mouse: hover shows, click opens. Touch: tap shows, tap the same episode again to open.
     const hit = el.querySelector('.hit');
     const cross = el.querySelector('.cross');
     const dots = el.querySelectorAll('circle.mark');
     let cur = -1;
+    let armed = -1;
+    const reset = () => { cross.style.opacity = 0; dots[cur]?.setAttribute('r', '3'); cur = -1; };
     const pick = (ev) => {
       const r = el.querySelector('svg').getBoundingClientRect();
       const px = ((ev.clientX - r.left) / r.width) * W;
@@ -194,42 +202,74 @@ export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1)
         dots[i]?.setAttribute('r', '6');
         cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.style.opacity = 1;
       }
-      const e = eps[i];
-      return e;
+      return eps[i];
     };
-    const show = (ev) => {
+    const show = (ev, hint = false) => {
       const e = pick(ev);
-      tip.show(epTip(e, value(e) !== e.r ? `<div class="tr"><span>${esc(label)}</span><b>${fmtv(value(e))}</b></div>` : ''), ev, hit);
+      const extra = (value(e) !== e.r ? `<div class="tr"><span>${esc(label)}</span><b>${fmtv(value(e))}</b></div>` : '')
+        + (hint ? '<div class="tm" style="margin-top:6px">Tap again to open</div>' : '');
+      tip.show(epTip(e, extra), ev, hit, () => { reset(); armed = -1; });
     };
-    hit.addEventListener('pointermove', show);
-    hit.addEventListener('pointerdown', show);
-    hit.addEventListener('pointerleave', () => { cross.style.opacity = 0; dots[cur]?.setAttribute('r', '3'); cur = -1; tip.hide(); });
-    hit.addEventListener('click', (ev) => { if (ev.pointerType === 'mouse' && cur >= 0) location.hash = `#/episode/${eps[cur].id}`; });
+    hit.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'mouse') show(ev); });
+    hit.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') tip.hide(); });
+    hit.addEventListener('click', (ev) => {
+      if (ev.pointerType === 'mouse' || !ev.pointerType && !matchMedia('(hover: none)').matches) {
+        if (cur >= 0) location.hash = `#/episode/${eps[cur].id}`;
+        return;
+      }
+      const before = cur;
+      show(ev, true);
+      if (armed === cur && before === cur) { tip.hide(); location.hash = `#/episode/${eps[before].id}`; return; }
+      armed = cur;
+    });
   });
 }
 
-// ---------------------------------------------------------------- columns: grouped bars over 9 seasons
+// ---------------------------------------------------------------- columns: grouped (or stacked) bars over 9 seasons
 
-export function columns(el, { cats, series, fmtv = fmt.int, height = 240, label = 'By season', href }) {
+const bar = (x, yTop, w, h, r) => {
+  // Rounded data end, flat at the baseline. Thin bars on phones get a smaller radius instead of a broken path.
+  r = Math.max(0, Math.min(r, w / 2, h));
+  return `M${x},${yTop + h}V${yTop + r}q0,${-r} ${r},${-r}h${Math.max(0, w - 2 * r)}q${r},0 ${r},${r}V${yTop + h}z`;
+};
+
+export function columns(el, { cats, series, fmtv = fmt.int, height = 240, label = 'By season', href, stacked = false, max: fixedMax }) {
   mount(el, (el, W) => {
     const H = height, m = { t: 18, r: 6, b: 28, l: 38 };
-    const max = Math.max(1, ...series.flatMap((s) => s.values));
-    const y = lin(0, max * 1.08, H - m.b, m.t);
+    const totals = cats.map((_, ci) => series.reduce((s, x) => s + x.values[ci], 0));
+    const max = fixedMax ?? Math.max(1, ...(stacked ? totals : series.flatMap((s) => s.values)));
+    const y = lin(0, max * (fixedMax ? 1 : 1.08), H - m.b, m.t);
     const band = (W - m.l - m.r) / cats.length;
-    const inner = Math.min(band * 0.72, 26 * series.length + 4);
-    const bw = (inner - (series.length - 1) * 2) / series.length;
+    const cols = stacked ? 1 : series.length;
+    const inner = Math.min(band * 0.78, 26 * cols + 4);
+    const gap = cols > 1 && inner / cols > 6 ? 2 : 0;
+    const bw = (inner - (cols - 1) * gap) / cols;
     let body = '';
     const ints = series.every((s) => s.values.every(Number.isInteger));
-    for (const t of ticks(0, max * 1.08, 4, ints).filter((t) => !ints || Number.isInteger(t))) body += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmtv(t)}</text>`;
+    for (const t of ticks(0, max * (fixedMax ? 1 : 1.08), 4, ints).filter((t) => !ints || Number.isInteger(t))) body += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmtv(t)}</text>`;
     const items = [];
     cats.forEach((c, ci) => {
       const x0 = m.l + band * ci + (band - inner) / 2;
+      let acc = 0;
       series.forEach((s, si) => {
         const v = s.values[ci];
-        const h = H - m.b - y(v);
         const idx = items.push({ c, ci, s, v }) - 1;
-        if (v > 0) body += `<path class="mark grow-y" data-i="${idx}" d="M${x0 + si * (bw + 2)},${H - m.b}v${-Math.max(0, h - 4)}q0,-4 4,-4h${bw - 8}q4,0 4,4v${Math.max(0, h - 4)}z" style="fill:${s.color};--d:${(ci * 0.05 + si * 0.08).toFixed(2)}s"/>`;
-        body += `<rect class="hit mark" data-i="${idx}" x="${x0 + si * (bw + 2)}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}"/>`;
+        const bx = stacked ? x0 : x0 + si * (bw + gap);
+        const yTop = y(acc + v);
+        const h = y(acc) - yTop;
+        if (v > 0) {
+          const last = !stacked || si === series.length - 1;
+          body += stacked
+            ? `<rect class="mark grow-y" data-i="${idx}" x="${bx}" y="${yTop}" width="${bw}" height="${Math.max(0, h - (last ? 0 : 1.5))}" rx="${last ? 3 : 0}" style="fill:${s.color};--d:${(ci * 0.05).toFixed(2)}s"/>`
+            : `<path class="mark grow-y" data-i="${idx}" d="${bar(bx, yTop, bw, h, bw > 10 ? 4 : 1.5)}" style="fill:${s.color};--d:${(ci * 0.05 + si * 0.08).toFixed(2)}s"/>`;
+        }
+        if (stacked) acc += v;
+        // Tap targets are the whole band (or column slot), never narrower than the bar slot.
+        const hx = stacked ? m.l + band * ci : bx - gap / 2;
+        const hw = stacked ? band : bw + gap;
+        body += stacked
+          ? `<rect class="hit" data-i="${idx}" x="${hx}" y="${yTop}" width="${hw}" height="${Math.max(h, 1)}"/>`
+          : `<rect class="hit" data-i="${idx}" x="${hx}" y="${m.t}" width="${hw}" height="${H - m.t - m.b}"/>`;
       });
       body += `<text x="${m.l + band * (ci + 0.5)}" y="${H - 9}" text-anchor="middle">${esc(c)}</text>`;
     });
@@ -239,6 +279,35 @@ export function columns(el, { cats, series, fmtv = fmt.int, height = 240, label 
       const it = items[+n.dataset.i];
       hover(n, () => `<div class="tt">${esc(it.s.name)}</div><div class="tr"><span>${esc(it.c)}</span><b>${fmtv(it.v)}</b></div>`, href ? href(it) : null);
     });
+  });
+}
+
+// ---------------------------------------------------------------- season strip: every episode as a dot, one row per season
+
+export function seasonStrip(el, D, { domain = [6.2, 10] } = {}) {
+  mount(el, (el, W) => {
+    const rowH = 38, m = { t: 8, r: 14, b: 26, l: 34 };
+    const H = m.t + m.b + rowH * D.seasons.length;
+    const x = lin(domain[0], domain[1], m.l, W - m.r);
+    let body = '';
+    for (const t of ticks(domain[0], domain[1], W < 520 ? 4 : 8)) body += `<line class="gridline" x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H - m.b}"/><text x="${x(t)}" y="${H - 8}" text-anchor="middle">${t.toFixed(1)}</text>`;
+    const items = [];
+    D.seasons.forEach((s, si) => {
+      const cy = m.t + rowH * si + rowH / 2;
+      body += `<a href="#/season/${s.n}"><text class="lbl-strong" x="${m.l - 10}" y="${cy + 4}" text-anchor="end">S${s.n}</text></a>`;
+      body += `<rect x="${x(s.q1)}" y="${cy - 9}" width="${Math.max(2, x(s.q3) - x(s.q1))}" height="18" rx="9" style="fill:var(--accent-soft)"/>`;
+      const eps = D.episodes.slice(s.first, s.last + 1);
+      const seen = {};
+      eps.forEach((e, i) => {
+        const k = e.r.toFixed(1);
+        const off = (seen[k] = (seen[k] || 0) + 1) - 1;
+        const idx = items.push(e) - 1;
+        body += `<circle class="mark pop" data-i="${idx}" cx="${x(e.r).toFixed(1)}" cy="${(cy + (off % 2 ? 1 : -1) * Math.ceil(off / 2) * 3.5).toFixed(1)}" r="4" style="fill:var(--accent);stroke:var(--surface);opacity:.85;--d:${(si * 0.05 + i * 0.01).toFixed(2)}s" stroke-width="1.5"/>`;
+      });
+      body += `<line x1="${x(s.median)}" x2="${x(s.median)}" y1="${cy - 12}" y2="${cy + 12}" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>`;
+    });
+    el.innerHTML = svg(W, H, body, 'Every episode rating by season');
+    bind(el, 'circle.mark', items, (e) => epTip(e), (e) => `#/episode/${e.id}`);
   });
 }
 
@@ -259,15 +328,14 @@ export function scatter(el, { pts, xLabel, yLabel, xFmt = (v) => v, yDomain, fit
     body += `<text x="${m.l}" y="${m.t - 4}" class="lbl">${esc(yLabel)}</text>`;
     body += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line-2)"/>`;
     pts.forEach((p, i) => {
-      body += `<circle class="mark pop" data-i="${i}" cx="${x(p.x).toFixed(1)}" cy="${y(p.y).toFixed(1)}" r="5" style="fill:${p.color || 'var(--accent)'};stroke:var(--surface);opacity:.85;--d:${(0.2 + i * 0.004).toFixed(3)}s" stroke-width="2"/>`;
+      body += `<circle class="mark pop" data-i="${i}" cx="${x(p.x).toFixed(1)}" cy="${y(Math.max(y0, Math.min(y1, p.y))).toFixed(1)}" r="5" style="fill:${p.color || 'var(--accent)'};stroke:var(--surface);opacity:.85;--d:${(0.2 + i * 0.004).toFixed(3)}s" stroke-width="2"/>`;
     });
     if (fit) {
       const n = xs.length, mx = xs.reduce((a, b) => a + b) / n, my = ys.reduce((a, b) => a + b) / n;
       const b = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0) / xs.reduce((s, v) => s + (v - mx) ** 2, 0);
       const a = my - b * mx;
       const xa = Math.min(...xs), xb = Math.max(...xs);
-      const len = W;
-      body += `<line class="draw" x1="${x(xa)}" y1="${y(a + b * xa)}" x2="${x(xb)}" y2="${y(a + b * xb)}" stroke="var(--ink)" stroke-width="2" style="--len:${len};--d:.8s" stroke-dasharray="${len}"/>`;
+      body += `<line class="draw" x1="${x(xa)}" y1="${y(a + b * xa)}" x2="${x(xb)}" y2="${y(a + b * xb)}" stroke="var(--ink)" stroke-width="2" pathLength="1" style="--d:.8s"/>`;
     }
     el.innerHTML = svg(W, H, body, label);
     bind(el, 'circle.mark', pts, tipFn || ((p) => epTip(p.ep)), (p) => (p.ep ? `#/episode/${p.ep.id}` : null));
@@ -304,16 +372,16 @@ export function strip(el, { groups, domain = [6, 10], label = 'Comparison' }) {
 
 // ---------------------------------------------------------------- who speaks after whom
 
-export function matrix(el, D, names) {
-  const { keys, m } = D.matrix;
+export function matrix(el, D) {
+  const { keys, m, tot } = D.matrix;
   mount(el, (el, Wc) => {
     const W = Math.max(560, Wc);
     const lab = 78, top = 64;
     const cell = (W - lab - 4) / keys.length;
     const H = top + cell * keys.length + 4;
-    // share of each speaker's "next lines" going to each other person, so Michael's volume doesn't drown the rest
-    const rows = m.map((r) => { const s = r.reduce((a, b) => a + b, 0); return r.map((v) => v / s); });
-    const max = Math.max(...rows.flat());
+    // Share of all the times someone else speaks right after this person (not just the twelve shown).
+    const rows = m.map((r, i) => r.map((v) => v / tot[i]));
+    const max = Math.max(...rows.flatMap((r, i) => r.filter((_, j) => j !== i)));
     const steps = ['var(--seq-1)', 'var(--seq-2)', 'var(--seq-3)', 'var(--seq-4)', 'var(--seq-5)', 'var(--seq-6)', 'var(--seq-7)'];
     let body = '';
     const items = [];
@@ -323,16 +391,18 @@ export function matrix(el, D, names) {
       keys.forEach((b, j) => {
         const v = rows[i][j];
         const idx = items.push({ a, b, v, n: m[i][j] }) - 1;
-        const step = a === b ? 'var(--bg-2)' : steps[Math.min(6, Math.floor((v / max) * 6.999))];
+        const si = Math.min(6, Math.floor((v / max) * 6.999));
+        const step = a === b ? 'var(--bg-2)' : steps[si];
         body += `<rect class="cell pop" data-i="${idx}" x="${lab + cell * j}" y="${top + cell * i}" width="${cell}" height="${cell}" rx="4" style="fill:${step};--d:${((i + j) * 0.02).toFixed(2)}s"/>`;
-        if (a !== b && v / max > 0.55) body += `<text x="${lab + cell * (j + 0.5)}" y="${top + cell * (i + 0.5) + 4}" text-anchor="middle" style="fill:var(--surface);font-weight:600;pointer-events:none">${Math.round(v * 100)}</text>`;
+        // Numbers only on the darkest three steps, in a colour that clears contrast in both themes.
+        if (a !== b && si >= 4) body += `<text x="${lab + cell * (j + 0.5)}" y="${top + cell * (i + 0.5) + 4}" text-anchor="middle" class="cell-n">${Math.round(v * 100)}</text>`;
       });
     });
     el.innerHTML = svg(W, H, body, 'Who speaks right after whom');
     el.querySelectorAll('.cell').forEach((n) => {
       const it = items[+n.dataset.i];
       if (it.a === it.b) return;
-      hover(n, () => `<div class="tt">${esc(it.a)} → ${esc(it.b)}</div><div class="tm">When ${esc(it.a)} finishes a line, ${esc(it.b)} speaks next ${fmt.pct(it.v * 100)} of the time.</div><div class="tr" style="margin-top:6px"><span>Times</span><b>${fmt.int(it.n)}</b></div>`);
+      hover(n, () => `<div class="tt">${esc(it.a)} → ${esc(it.b)}</div><div class="tm">After ${esc(it.a)} finishes a line, ${esc(it.b)} speaks next ${fmt.pct(it.v * 100)} of the time.</div><div class="tr" style="margin-top:6px"><span>Times</span><b>${fmt.int(it.n)}</b></div>`);
     });
   });
 }
@@ -340,7 +410,6 @@ export function matrix(el, D, names) {
 // ---------------------------------------------------------------- the barcode: when each person talks in an episode
 
 export function barcode(el, ep, D) {
-  const codes = Object.fromEntries(Object.entries(D.codes).map(([k, c]) => [c, k]));
   const seq = ep.seq;
   const rows = ep.top.slice(0, 6).map((t) => t.k);
   mount(el, (el, Wc) => {
@@ -361,26 +430,24 @@ export function barcode(el, ep, D) {
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="${esc(k)} speaks ${count} lines" style="fill:${color(k)}">${r}</svg>
         <span class="bv">${count}</span></div>`;
     }).join('')}</div>
-    <div class="barcode-axis"><span>Cold open</span><span>Halfway</span><span>Credits</span></div>`;
-    el.querySelectorAll('.rv').forEach((n) => requestAnimationFrame(() => n.classList.add('in')));
-    void codes;
+    ${ep.shuffled ? '' : '<div class="barcode-axis"><span>Start</span><span>Halfway</span><span>End</span></div>'}`;
+    el.querySelectorAll('.rv').forEach((node) => requestAnimationFrame(() => node.classList.add('in')));
   });
 }
 
-// ---------------------------------------------------------------- tiny strip of who talks, for list rows
+// ---------------------------------------------------------------- tiny bar of who talks, for list rows
 
-export function seqThumb(ep, D) {
-  const W = 150, H = 18;
-  const n = ep.seq.length;
-  const bw = W / n;
-  const inv = Object.fromEntries(Object.entries(D.codes).map(([k, c]) => [c, k]));
+// Share of the episode's lines by person, biggest first. It doesn't depend on line order, so it's right for every episode.
+export function seqThumb(ep) {
+  const W = 150, H = 14;
+  let x = 0;
   let r = '';
-  for (let i = 0; i < n; i++) {
-    const k = inv[ep.seq[i]];
-    if (!k) continue;
-    r += `<rect x="${(i * bw).toFixed(2)}" width="${(bw + 0.3).toFixed(2)}" height="${H}" style="fill:${color(k)}"/>`;
+  for (const t of ep.top) {
+    const w = (t.n / ep.lines) * W;
+    r += `<rect x="${x.toFixed(2)}" width="${Math.max(0, w - 1).toFixed(2)}" height="${H}" style="fill:${color(t.k)}"/>`;
+    x += w;
   }
-  return `<svg class="ep-seq" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><rect width="${W}" height="${H}" style="fill:var(--bg-2)"/>${r}</svg>`;
+  return `<svg class="ep-seq" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><rect width="${W}" height="${H}" rx="3" style="fill:var(--bg-2)"/>${r}</svg>`;
 }
 
 // ---------------------------------------------------------------- one dot row for the crew page
