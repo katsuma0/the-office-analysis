@@ -424,7 +424,7 @@ function selfNote(c) {
 const SHARED_NAMES = { 'David Wallace': 'Every “David” counts, so a few of these are other Davids.', Robert: 'Every “Robert” counts, so Senator Robert Lipton is in here too.' };
 
 // The patterns the pipeline used for the faces (MICHAEL_FACES in build_data.py), on the same normalised text.
-const FACE_RE = { 'Michael Scarn': /\bscarn\b/, 'Prison Mike': /\bprison mike\b/, 'Date Mike': /\bdate mike\b/, 'Caleb Crawdad': /\bcaleb crawdad\b/, 'Michael Klump': /\bklump\b/, Mykonos: /\bmykonos\b|\bmikanos\b/ };
+const FACE_RE = { 'Michael Scarn': /\bscarn\b/, 'Prison Mike': /\bprison mike\b/, 'Date Mike': /\bdate mike\b/, 'Caleb Crawdad': /\bcaleb crawdad\b/, 'Michael Klump': /\bklump\b|\bmichael clump\b/, Mykonos: /\bmykonos\b|\bmikanos\b/ };
 
 const monthYear = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 // " over 5 years and 3 months", counted on the air dates, not by subtracting years.
