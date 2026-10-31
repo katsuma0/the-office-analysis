@@ -1,6 +1,6 @@
 // Hand-rolled SVG charts. Each one draws for the container's current width and redraws when it changes.
 
-import { esc, fmt, hover, color, epCode, tip } from './ui.js';
+import { esc, fmt, hover, color, epCode, tip, nav } from './ui.js';
 
 const lin = (d0, d1, r0, r1) => {
   const k = (r1 - r0) / (d1 - d0 || 1);
@@ -54,6 +54,11 @@ const bind = (el, sel, data, html, href) => {
 
 const svg = (w, h, body, label) => `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(label)}">${body}</svg>`;
 
+const TAP = '<div class="tm" style="margin-top:6px">Tap again to open</div>';
+const isTouch = (ev) => ev.pointerType === 'touch' || ev.pointerType === 'pen' || (!ev.pointerType && matchMedia('(hover: none)').matches);
+// How many columns a second tap may drift and still open the first one: about 8px either side, at least one column.
+const drift = (colW, svgEl, W) => Math.max(1, Math.round(8 / ((colW * svgEl.getBoundingClientRect().width) / W)));
+
 // ---------------------------------------------------------------- skyline: every episode as a bar
 
 export function skyline(el, D) {
@@ -79,10 +84,34 @@ export function skyline(el, D) {
     });
     body += `<line x1="${left}" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line-2)"/>`;
     el.innerHTML = svg(W, H, body, 'IMDb rating of every episode, in air order');
-    el.querySelector('svg').classList.add('skyline');
-    el.querySelectorAll('.bar').forEach((n) => {
-      const e = eps[+n.dataset.i];
-      hover(n, () => epTip(e), `#/episode/${e.id}`);
+    const sv = el.querySelector('svg');
+    sv.classList.add('skyline');
+    // On a phone a bar is under 2px wide, too thin to hit twice. So the whole chart is the target: the pointer's
+    // column picks the episode, and on touch a second tap near the first opens it.
+    const bars = sv.querySelectorAll('.bar');
+    const at = (ev) => {
+      const r = sv.getBoundingClientRect();
+      const px = ((ev.clientX - r.left) / r.width) * W;
+      return px < left ? -1 : Math.min(eps.length - 1, Math.floor((px - left) / bw));
+    };
+    let cur = -1;
+    let armed = -1;
+    const mark = (i) => { bars[cur]?.classList.remove('hl'); cur = i; bars[i]?.classList.add('hl'); };
+    const show = (i, ev, hint) => { mark(i); tip.show(epTip(eps[i]) + (hint ? TAP : ''), ev, sv, () => { mark(-1); armed = -1; }); };
+    const open = (i) => { tip.hide(); nav.go(`#/episode/${eps[i].id}`); };
+    sv.addEventListener('pointermove', (ev) => {
+      if (ev.pointerType !== 'mouse') return;
+      const i = at(ev);
+      if (i < 0) { if (cur >= 0) tip.hide(); } else if (i !== cur) show(i, ev); else tip.move(ev);
+    });
+    sv.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') tip.hide(); });
+    sv.addEventListener('click', (ev) => {
+      const i = at(ev);
+      if (!isTouch(ev)) { if (i >= 0) open(i); return; }
+      if (i >= 0 && armed >= 0 && tip.owner() === sv && Math.abs(i - armed) <= drift(bw, sv, W)) { open(armed); return; }
+      if (i < 0) { tip.hide(); return; }
+      show(i, ev, true);
+      armed = i;
     });
   });
 }
@@ -155,7 +184,10 @@ export function lollipops(el, eps, { avg, showAvg = true, yMin = 6, label = 'Epi
 export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1), yDomain = [6, 10], marker, eras = true, window = 9, label = 'Rating over time', height = 320, exclude = [] } = {}) {
   const eps = D.episodes;
   mount(el, (el, W) => {
-    const H = height, m = { t: 30, r: 12, b: 30, l: 40 };
+    // Under 520px there's no room beside the era lines for their labels, so they become a key above the plot.
+    const narrow = W < 520 && eras && marker != null;
+    const rows = narrow && W < 340 ? 2 : 1;
+    const H = height, m = { t: narrow ? 30 + 16 * rows : 30, r: 12, b: 30, l: 40 };
     const x = lin(0, eps.length - 1, m.l, W - m.r);
     const y = lin(yDomain[0], yDomain[1], H - m.b, m.t);
     const clamp = (v) => Math.max(yDomain[0], Math.min(yDomain[1], v));
@@ -192,9 +224,14 @@ export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1)
       const avg = (arr) => { const v = arr.filter((e) => !exclude.includes(e.id)).map(value); return v.reduce((s, x2) => s + x2, 0) / v.length; };
       const a = avg(eps.slice(0, marker + 1)), b = avg(eps.slice(marker + 1));
       body += `<line x1="${x(0)}" x2="${x(marker)}" y1="${y(a)}" y2="${y(a)}" stroke="var(--accent)" stroke-width="2"/>
-        <text class="lbl-strong" x="${x(2)}" y="${y(a) - 8}">${fmtv(a)} avg</text>
-        <line x1="${x(marker + 1)}" x2="${x(eps.length - 1)}" y1="${y(b)}" y2="${y(b)}" stroke="var(--ink-3)" stroke-width="2"/>
-        <text class="lbl-strong" x="${x(eps.length - 1)}" y="${y(b) + 18}" text-anchor="end">${fmtv(b)} avg</text>`;
+        <line x1="${x(marker + 1)}" x2="${x(eps.length - 1)}" y1="${y(b)}" y2="${y(b)}" stroke="var(--ink-3)" stroke-width="2"/>`;
+      const key = (c, t, dx = 0) => `<tspan dx="${dx}" style="fill:${c}">●</tspan> ${t}`;
+      body += narrow
+        ? (rows === 1
+          ? `<text class="lbl-strong" x="${m.l}" y="14">${key('var(--accent)', `With Michael ${fmtv(a)} avg`)}${key('var(--ink-3)', `After ${fmtv(b)} avg`, 14)}</text>`
+          : `<text class="lbl-strong" x="${m.l}" y="14">${key('var(--accent)', `With Michael ${fmtv(a)} avg`)}</text><text class="lbl-strong" x="${m.l}" y="31">${key('var(--ink-3)', `After ${fmtv(b)} avg`)}</text>`)
+        : `<text class="lbl-strong" x="${x(2)}" y="${y(a) - 8}">${fmtv(a)} avg</text>
+          <text class="lbl-strong" x="${x(eps.length - 1)}" y="${y(b) + 18}" text-anchor="end">${fmtv(b)} avg</text>`;
     }
     body += `<line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" style="opacity:0"/>`;
     body += `<rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" style="touch-action:pan-y"/>`;
@@ -203,13 +240,17 @@ export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1)
     const hit = el.querySelector('.hit');
     const cross = el.querySelector('.cross');
     const dots = el.querySelectorAll('circle.mark');
+    const sv = el.querySelector('svg');
     let cur = -1;
     let armed = -1;
     const reset = () => { cross.style.opacity = 0; dots[cur]?.setAttribute('r', '3'); cur = -1; };
-    const pick = (ev) => {
-      const r = el.querySelector('svg').getBoundingClientRect();
+    const at = (ev) => {
+      const r = sv.getBoundingClientRect();
       const px = ((ev.clientX - r.left) / r.width) * W;
-      const i = Math.max(0, Math.min(eps.length - 1, Math.round(((px - m.l) / (W - m.l - m.r)) * (eps.length - 1))));
+      return Math.max(0, Math.min(eps.length - 1, Math.round(((px - m.l) / (W - m.l - m.r)) * (eps.length - 1))));
+    };
+    const pick = (ev) => {
+      const i = at(ev);
       if (i !== cur) {
         dots[cur]?.setAttribute('r', '3');
         cur = i;
@@ -221,19 +262,24 @@ export function timeline(el, D, { value = (e) => e.r, fmtv = (v) => v.toFixed(1)
     const show = (ev, hint = false) => {
       const e = pick(ev);
       const extra = (value(e) !== e.r ? `<div class="tr"><span>${esc(label)}</span><b>${fmtv(value(e))}</b></div>` : '')
-        + (hint ? '<div class="tm" style="margin-top:6px">Tap again to open</div>' : '');
+        + (hint ? TAP : '');
       tip.show(epTip(e, extra), ev, hit, () => { reset(); armed = -1; });
     };
     hit.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'mouse') show(ev); });
     hit.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') tip.hide(); });
     hit.addEventListener('click', (ev) => {
-      if (ev.pointerType === 'mouse' || !ev.pointerType && !matchMedia('(hover: none)').matches) {
-        if (cur >= 0) location.hash = `#/episode/${eps[cur].id}`;
+      if (!isTouch(ev)) {
+        if (cur >= 0) nav.go(`#/episode/${eps[cur].id}`);
         return;
       }
-      const before = cur;
+      // A second tap opens the episode the first one showed, if it lands within a thumb's width of it.
+      if (armed >= 0 && tip.owner() === hit && Math.abs(at(ev) - armed) <= drift((W - m.l - m.r) / (eps.length - 1), sv, W)) {
+        const id = eps[armed].id;
+        tip.hide();
+        nav.go(`#/episode/${id}`);
+        return;
+      }
       show(ev, true);
-      if (armed === cur && before === cur) { tip.hide(); location.hash = `#/episode/${eps[before].id}`; return; }
       armed = cur;
     });
   });
@@ -389,19 +435,24 @@ export function strip(el, { groups, domain = [6, 10], label = 'Comparison' }) {
 export function matrix(el, D) {
   const { keys, m, tot } = D.matrix;
   mount(el, (el, Wc) => {
-    const W = Math.max(560, Wc);
-    const lab = 78, top = 64;
-    const cell = (W - lab - 4) / keys.length;
+    const cs = getComputedStyle(el);
+    const inner = Wc - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const W = Math.max(560, inner);
+    // Phones: the names stay put in their own column and only the grid scrolls, so every row keeps its name.
+    const split = W > inner;
+    const lab = 78, top = 64, pad = 30; // pad: room for the last rotated name
+    const cell = (W - lab - pad) / keys.length;
     const H = top + cell * keys.length + 4;
     // Share of all the times someone else speaks right after this person (not just the twelve shown).
     const rows = m.map((r, i) => r.map((v) => v / tot[i]));
     const max = Math.max(...rows.flatMap((r, i) => r.filter((_, j) => j !== i)));
     const steps = ['var(--seq-1)', 'var(--seq-2)', 'var(--seq-3)', 'var(--seq-4)', 'var(--seq-5)', 'var(--seq-6)', 'var(--seq-7)'];
     let body = '';
+    let names = '';
     const items = [];
     keys.forEach((k, j) => body += `<text transform="translate(${lab + cell * (j + 0.5) - 3},${top - 8}) rotate(-40)" class="lbl">${esc(k)}</text>`);
     keys.forEach((a, i) => {
-      body += `<text x="${lab - 10}" y="${top + cell * (i + 0.5) + 4}" text-anchor="end" class="lbl">${esc(a)}</text>`;
+      names += `<text x="${lab - 10}" y="${top + cell * (i + 0.5) + 4}" text-anchor="end" class="lbl">${esc(a)}</text>`;
       keys.forEach((b, j) => {
         const v = rows[i][j];
         const idx = items.push({ a, b, v, n: m[i][j] }) - 1;
@@ -412,7 +463,22 @@ export function matrix(el, D) {
         if (a !== b && si >= 4) body += `<text x="${lab + cell * (j + 0.5)}" y="${top + cell * (i + 0.5) + 4}" text-anchor="middle" class="cell-n">${Math.round(v * 100)}</text>`;
       });
     });
-    el.innerHTML = svg(W, H, body, 'Who speaks right after whom');
+    const label = 'Who speaks right after whom';
+    if (!split) el.innerHTML = svg(W, H, names + body, label);
+    else {
+      el.innerHTML = `<div style="display:flex;align-items:flex-start">
+        <svg viewBox="0 0 ${lab} ${H}" width="${lab}" height="${H}" aria-hidden="true" style="flex:none;width:${lab}px;min-width:0">${names}</svg>
+        <div class="mx-scroll" style="flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain">
+          <svg viewBox="${lab} 0 ${W - lab} ${H}" width="${W - lab}" height="${H}" role="img" aria-label="${esc(label)}" style="width:${W - lab}px;min-width:0;display:block">${body}</svg>
+        </div></div>`;
+      // The edge fade says there's more to the right; at the end there isn't.
+      const sc = el.querySelector('.mx-scroll');
+      const wrap = el.parentElement;
+      const end = () => wrap?.classList.toggle('at-end', sc.scrollLeft + sc.clientWidth >= sc.scrollWidth - 2);
+      sc.addEventListener('scroll', end, { passive: true });
+      end();
+    }
+    if (!split) el.parentElement?.classList.remove('at-end');
     el.querySelectorAll('.cell').forEach((n) => {
       const it = items[+n.dataset.i];
       if (it.a === it.b) return;

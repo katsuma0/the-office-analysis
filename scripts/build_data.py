@@ -279,6 +279,10 @@ def norm(text):
 df["tokens"] = df["text"].map(tokens)
 df["nwords"] = df["tokens"].map(len)
 df["norm"] = df["text"].map(norm)
+# Lines repaired from mojibake carry real em dashes; the rest of the transcript writes them as hyphens ("I--this").
+# Swapped after tokenizing and with the spacing kept, so no word or line count moves.
+for col in ("text", "text_w_direction"):
+    df[col] = df[col].str.replace("\u2014", "--", regex=False)
 df["season"] = df["ep_id"].map(lambda i: episodes[i]["s"])
 
 
@@ -329,6 +333,13 @@ def lift(a, b):
 
 
 name_pat = {k: re.compile(r"\b" + re.escape(FIRST[k]) + r"\b", re.I) for k in CAST_KEYS}
+# Not names, so they're taken out before anyone's name is counted: Michael's "Deck the halls with boughs of holly"
+# (season 3, a season before Holly arrives), Erin's "For Pete's sake", and famous namesakes. Kevin Costner isn't Kevin.
+NOT_A_NAME = re.compile(
+    r"\b(?:boughs of holly|for pete['’]?s sake|kevin (?:costner|nealon|durant)|jim carrey|oscar mayer|ryan stiles"
+    r"|michael (?:jackson|jordan|moore|winslow|phelps|cera|vick)|dwight howard|stanley kaplan"
+    r"|robert (?:loggia|redford|dunder|mifflin))\b", re.I)
+df["named"] = df["text"].str.replace(NOT_A_NAME, " ", regex=True)
 ep_lines = df.groupby("ep_id").size()
 ep_rating = {e["id"]: e["r"] for e in episodes}
 FINALE = len(episodes) - 1
@@ -450,8 +461,8 @@ for k, full, blurb, actor in CAST:
     longest = longest_row[0]
     quotes = [t for t in texts if 8 <= len(t.split()) <= 28 and not t.startswith("[") and not own.search(t)]
     random.shuffle(quotes)
-    mentions = sum(len(name_pat[k].findall(t)) for t in rest["text"])
-    named_by = rest[rest["text"].str.contains(name_pat[k])].groupby("speaker").size().sort_values(ascending=False)
+    mentions = sum(len(name_pat[k].findall(t)) for t in rest["named"])
+    named_by = rest[rest["named"].str.contains(name_pat[k])].groupby("speaker").size().sort_values(ascending=False)
     sp_lines = df.groupby("speaker").size()
     # First and last words. The last only when it's reliable: 19 of 24 characters end in the Finale, whose transcript is shuffled.
     firsts = sub[sub["nwords"] >= 2]
@@ -494,7 +505,7 @@ for k, full, blurb, actor in CAST:
         "unusual": [{"k": b, "x": round(x, 1), "n": n} for x, b, n in lifts[:3] if x >= 1.5],
         "mentioned": mentions,
         "namedBy": [{"k": s, "n": int(n), "pct": round(n / sp_lines[s] * 100, 1)} for s, n in named_by.head(5).items()],
-        "selfNamed": int(sub["text"].str.contains(name_pat[k]).sum()),
+        "selfNamed": int(sub["named"].str.contains(name_pat[k]).sum()),
         "firstLine": {"ep": int(first_row["ep_id"]), "t": first_row["text"], "shuffled": int(first_row["ep_id"]) in scrambled},
         "lastLine": last_line,
         "gap": {"n": gaps[0][0], "from": gaps[0][1], "to": gaps[0][2]} if gaps else None,
@@ -793,7 +804,8 @@ MICHAEL_FACES = [
     ("Prison Mike", r"\bprison mike\b", "Did time. The worst thing about prison was the Dementors."),
     ("Date Mike", r"\bdate mike\b", "Nice to meet me."),
     ("Caleb Crawdad", r"\bcaleb crawdad\b", "Murder mystery, Savannah, Georgia."),
-    ("Michael Klump", r"\bklump\b", "The Nutty Professor, at the garage sale."),
+    # The transcript spells it "Michael Clump" in Weight Loss, where he does the bit; Garage Sale only remembers it.
+    ("Michael Klump", r"\bklump\b|\bmichael clump\b", "The Nutty Professor, for an obesity-awareness talk with Holly."),
     ("Mykonos", r"\bmykonos\b|\bmikanos\b", "Greek, from The Seminar."),
 ]
 faces_out = []
@@ -811,13 +823,13 @@ COUPLES = [("Jim", "Pam"), ("Michael", "Holly"), ("Michael", "Jan"), ("Dwight", 
 ily = re.compile(r"\bi love you\b")
 couples_out = []
 for a, b in COUPLES:
-    # Search the text with apostrophes left in, so "Pam's" counts as saying Pam.
+    # Search the text with apostrophes left in, so "Pam's" counts as saying Pam. NOT_A_NAME is already out of "named".
     pa = re.compile(r"\b" + b.lower() + r"\b")
     pb = re.compile(r"\b" + a.lower() + r"\b")
     na = df[df["speaker"] == a]
     nb = df[df["speaker"] == b]
-    a_says = na["text"].str.lower().map(lambda t: len(pa.findall(t)))
-    b_says = nb["text"].str.lower().map(lambda t: len(pb.findall(t)))
+    a_says = na["named"].str.lower().map(lambda t: len(pa.findall(t)))
+    b_says = nb["named"].str.lower().map(lambda t: len(pb.findall(t)))
     shared = sorted(set(na["ep_id"]) & set(nb["ep_id"]))
     back = Counter()
     prev_sp, prev_ep = None, None

@@ -136,15 +136,23 @@ const MISSING = {
   // Kevin does say this one on screen, so the stamp can't say "never said".
   'few word do trick': { who: 'Kevin', ep: 'The Incentive', stamp: 'Cut off', note: 'The transcript cuts Kevin off at “So me think”. Fitting.', try: 'So me think' },
 };
-// The data's label for this one reads as if someone says it to Stanley. Stanley is the one asking.
-const RELABEL = { 'lost your mind': 'Have you lost your mind?' };
+// The data counts "lost your mind" under a label that reads as if someone says it to Stanley. Stanley is the one
+// asking, and 5 of the 6 lines are the full "Have you lost your mind?" (the sixth is "Son, you've lost your mind."
+// in Stairmageddon). So the card shows and counts the question, which also makes its tap search find the same 5.
+// Checked by hand against the data's 6 lines in 6 episodes; if that changes, the card shows the counted phrase as is.
+const RELABEL = { 'lost your mind': { of: 6, label: 'Have you lost your mind?', q: 'have you lost your mind', n: 5, eps: 5 } };
+const relabel = (x) => {
+  const r = RELABEL[x.q];
+  if (!r) return x;
+  return r.of === x.n ? { ...x, label: r.label, q: r.q, n: r.n, eps: r.eps } : { ...x, label: `…${x.q}` };
+};
 // D.quotes counts lines, not times, and names only the top speaker. I read these lines in the transcript to get the
 // times and to see who says them. Each entry is keyed to the line count I checked, so if the data changes the card
 // falls back to what D.quotes can say. Every quote with one line is said once in it (checked the same way).
 const CHECKED = {
   'where are the turtles': { n: 2, times: 3, solo: true },
   'boom roasted': { n: 2, times: 9, solo: true },
-  'lost your mind': { n: 6, times: 6, solo: true },
+  'have you lost your mind': { n: 5, times: 5, solo: true },
   'did i stutter': { n: 3, times: 3, solo: false },
 };
 
@@ -171,7 +179,7 @@ function quoteFacts(D, x) {
 
 function quoteWall(D) {
   const order = (q) => (q.n === 0 ? 1e6 : q.n);
-  const qs = [...D.quotes].sort((a, b) => order(a) - order(b));
+  const qs = D.quotes.map(relabel).sort((a, b) => order(a) - order(b));
   return qs.map((x, i) => {
     const miss = MISSING[x.q];
     const k = x.who || miss?.who;
@@ -179,7 +187,7 @@ function quoteWall(D) {
     const { times, solo } = x.n ? quoteFacts(D, x) : {};
     // Stamps count times said when that's known, and lines when it isn't.
     const stamp = !x.n ? (miss?.stamp || 'Never said') : times ? `Said ${fmt.times(times)}` : `In ${fmt.plural(x.n, 'line')}`;
-    const shown = RELABEL[x.q] || x.label;
+    const shown = x.label;
     const tryQ = x.n ? asWritten(shown, x.q) : miss?.try;
     const link = e ? `<a href="#/episode/${e.id}">${esc(e.t)}</a>` : '';
     const whoLine = !k ? '' : x.n > 1 ? `${dot(k)}${esc(k)}${solo ? ', every time' : ' says it most'}` : `${dot(k)}${esc(k)}${link || miss?.where ? ` · ${link || esc(miss.where)}` : ''}`;
@@ -269,13 +277,14 @@ function answersProse(D) {
     const ms = D.char.Michael?.perSeasonShare || [];
     const his = ms.map((v, i) => [v, i + 1]).filter(([v]) => v > 1);
     const vol = his.length
-      ? ` Part of that is volume. In seasons ${his[0][1]} to ${his[his.length - 1][1]} he has between ${fmt.pct(Math.min(...his.map((x) => x[0])))} and ${fmt.pct(Math.max(...his.map((x) => x[0])))} of each season’s lines, so he’s the likeliest next voice almost by default.`
+      ? ` Part of that is volume: in seasons ${his[0][1]} to ${his[his.length - 1][1]} he has ${fmt.pct(Math.min(...his.map((x) => x[0])))} to ${fmt.pct(Math.max(...his.map((x) => x[0])))} of each season’s lines, so he’s the likeliest next voice almost by default.`
       : '';
     out.push(`<p><strong>${head}</strong> He’s the most likely next speaker for ${nw(mine.length)} of the other ${nw(others.length)}.${parts.length ? ` The exceptions are ${andSemi(parts)}.` : ''}${vol}</p>`);
 
     const lean = others.map((k) => ({ k, v: sh(k, 'Michael') })).sort((a, b) => b.v - a.v);
     const close = lean[0].v - lean[2].v < 0.015;
-    let p3 = `${lean[0].k} leans on Michael hardest: after ${lean[0].k} speaks, it’s Michael ${share(lean[0].v)} of the time, with ${lean[1].k} (${share(lean[1].v)}) and ${lean[2].k} (${share(lean[2].v)}) ${close ? 'right behind' : 'next'}.`;
+    // One clause per person, so no share reads as one of Ryan's next speakers.
+    let p3 = `${lean[0].k} leans on Michael hardest: after ${lean[0].k} speaks, Michael goes next ${share(lean[0].v)} of the time. After ${lean[1].k} it’s ${share(lean[1].v)}, and after ${lean[2].k} ${share(lean[2].v)}${close ? ', so it’s close' : ''}.`;
     if (has('Angela', 'Dwight')) {
       const [a1, a2] = top('Angela');
       const pair = new Set([a1.k, a2.k]);
@@ -283,30 +292,67 @@ function answersProse(D) {
     }
     out.push(`<p>${p3}</p>`);
   }
-  out.push(`<p class="small muted">Only the ${fmt.int(episodes)} episodes whose transcripts are in order count here. The other ${fmt.int(D.totals.episodes - episodes)} shuffle scenes together, so who-follows-whom would be noise. Each percentage is out of every time someone else speaks next, including everyone outside the grid, so the rows don’t add up to 100. Consecutive lines also catch scene changes, so read it as who shares scenes, not a proper model of conversation.</p>`);
+  out.push(`<p class="small muted">Counted over the ${fmt.int(episodes)} episodes whose transcript is in order. Back-to-back lines also catch scene changes, so read it as who shares scenes.</p>`);
   return out.join('');
 }
 
-function scenesList(D) {
+// The longest stretch where only two people talk, the same way build_data.py's two_person_runs finds it.
+function longestPair(rows) {
+  const sp = rows.map((r) => r[1]);
+  let best = null;
+  for (let i = 0; i < sp.length;) {
+    const pair = new Set([sp[i]]);
+    let j = i + 1;
+    while (j < sp.length && (pair.has(sp[j]) || pair.size < 2)) pair.add(sp[j++]);
+    let changes = 0;
+    for (let x = i + 1; x < j; x++) if (sp[x] !== sp[x - 1]) changes++;
+    if (pair.size === 2 && changes >= 2 && (!best || j - i > best.n)) best = { n: j - i, at: i };
+    // Restart from the last speaker change so overlapping runs are found.
+    let k = j - 1;
+    while (k > i && sp[k - 1] === sp[k]) k--;
+    i = Math.max(i + 1, k);
+  }
+  if (!best) return null;
+  const run = rows.slice(best.at, best.at + best.n).map((r) => [r[1], r[2]]);
+  return { n: best.n, lines: run.slice(0, 6), end: run.slice(Math.max(6, best.n - 2)) };
+}
+
+// D.scenes stops at 12, which can cut through a tie. Every run tied with the last one belongs on the list too, so
+// those come from their episode's e.run, and their lines load from the transcript when the list is opened.
+function sceneRuns(D) {
+  const sc = D.scenes || [];
+  if (!sc.length) return [];
+  const last = sc[sc.length - 1].n;
+  const have = new Set(sc.map((s) => s.ep));
+  const more = D.episodes.filter((e) => e.run && e.run.n === last && !have.has(e.id)).map((e) => ({ ep: e.id, n: e.run.n, a: e.run.a, b: e.run.b }));
+  // Competition ranks, the way the episode pages rank them: two 36-line runs are both 8th, and the next is 10th.
+  const all = [...sc, ...more];
+  return all.map((s) => ({ ...s, pos: 1 + all.filter((x) => x.n > s.n).length, tied: all.some((x) => x !== s && x.n === s.n) }));
+}
+
+function sceneScript(sc) {
+  const first = sc.lines.slice(0, 3);
+  const last = sc.end[sc.end.length - 1];
+  const skipped = sc.n - first.length - 1;
+  const ln = ([k, t]) => `<p class="tk-sl"><b>${dot(k)}${esc(k)}</b> ${say(t)}</p>`;
+  return `${first.map(ln).join('')}${skipped > 0 ? `<p class="tk-gap">${fmt.int(skipped)} more ${skipped === 1 ? 'line' : 'lines'}</p>` : ''}${last ? ln(last) : ''}`;
+}
+
+function scenesList(D, runs) {
   const rank = (k) => D.char[k]?.rank ?? 999;
-  return D.scenes.map((sc, i) => {
+  return runs.map((sc) => {
     const e = D.episodes[sc.ep];
     const [a, b] = [sc.a, sc.b].sort((x, y) => rank(x) - rank(y));
-    const first = sc.lines.slice(0, 3);
-    const last = sc.end[sc.end.length - 1];
-    const skipped = sc.n - first.length - 1;
-    const ln = ([k, t]) => `<p class="tk-sl"><b>${dot(k)}${esc(k)}</b> ${say(t)}</p>`;
-    return `<li class="tk-scene${i >= 6 ? ' tk-extra' : ''}">
-      <div class="tk-sh"><span class="tk-sn">${i + 1}</span><span class="tk-pair">${dot(a)}${dot(b)}${esc(a)} &amp; ${esc(b)}</span><b class="tk-sc">${fmt.int(sc.n)} lines</b></div>
+    return `<li class="tk-scene${sc.pos > 6 ? ' tk-extra' : ''}">
+      <div class="tk-sh"><span class="tk-sn">${sc.pos}${sc.tied ? '<span class="tk-sr">, tied</span>' : ''}</span><span class="tk-pair">${dot(a)}${dot(b)}${esc(a)} &amp; ${esc(b)}</span><b class="tk-sc">${fmt.int(sc.n)} lines</b></div>
       <div class="tk-sm"><a href="#/episode/${e.id}">${esc(e.t)}</a> · ${epCode(e)}${e.shuffled ? ' <span class="flag alt">Shuffled transcript</span>' : ''}</div>
-      <div class="tk-script">${first.map(ln).join('')}${skipped > 0 ? `<p class="tk-gap">${fmt.int(skipped)} more ${skipped === 1 ? 'line' : 'lines'}</p>` : ''}${last ? ln(last) : ''}</div>
+      <div class="tk-script"${sc.lines ? '' : ` data-ep="${e.id}"`}>${sc.lines ? sceneScript(sc) : ''}</div>
     </li>`;
   }).join('');
 }
 
 // Running jokes whose label isn't quite what build_data.py counts: it counts every "vance refrigeration".
 const PHRASE_SHOW = { 'Bob Vance, Vance Refrigeration': 'Vance Refrigeration' };
-const PHRASE_NOTE = { 'Bob Vance, Vance Refrigeration': 'Every “Vance Refrigeration” counts here, not only the full “Bob Vance, Vance Refrigeration”.' };
 const phraseShow = (p) => PHRASE_SHOW[p.label] || p.label;
 // The search that finds the same lines as each count (the PHRASES patterns in build_data.py). Quoted means whole
 // words, unquoted means word starts. null where no single search does: "No, God, no" also counts "No, God, please no",
@@ -340,7 +386,6 @@ function phraseCard(D, p) {
   return `
     <div class="card"><p class="phrase-big">“${esc(phraseShow(p))}”</p>
       <p class="phrase-total">${said}</p>
-      ${PHRASE_NOTE[p.label] ? `<p class="small muted">${esc(PHRASE_NOTE[p.label])}</p>` : ''}
       ${twss ? '<p class="small"><a class="link-arrow" href="#/findings@twss">All of them, with the setups</a></p>' : ''}
       ${q ? `<p class="small"><button type="button" class="link-arrow tk-read" data-q="${esc(q)}">${p.lines === 1 ? 'Read the line' : `Read all ${fmt.int(p.lines)} lines`}</button></p>` : ''}
       <div id="phr-chart" class="mt"></div></div>
@@ -350,14 +395,16 @@ function phraseCard(D, p) {
 
 export function dialogue(D, lines, term) {
   const cats = D.seasons.map((s) => `S${s.n}`);
-  const nScenesShuf = D.scenes.filter((s) => D.episodes[s.ep].shuffled).length;
+  const runs = sceneRuns(D);
+  const nScenesShuf = runs.filter((s) => D.episodes[s.ep].shuffled).length;
+  const nScenesMore = runs.filter((s) => s.pos > 6).length;
   return {
     title: term ? `“${parse(term).show}” in the script` : 'Dialogue',
     html: `
     <section class="wrap page-head">
       <p class="eyebrow">Dialogue</p>
       <h1>Every line, <em>searchable.</em></h1>
-      <p class="lede">All ${fmt.int(D.totals.lines)} lines, ${fmt.int(D.totals.vocab)} different words. Type anything and see who said it, when, and how often. Punctuation doesn’t count, so “scotts tots” finds Scott’s Tots.</p>
+      <p class="lede">All ${fmt.int(D.totals.lines)} lines, ${fmt.int(D.totals.vocab)} different words. Punctuation doesn’t count, so “scotts tots” finds Scott’s Tots.</p>
     </section>
     <section class="wrap">
       <form class="searchbox rv" role="search" id="sform">
@@ -371,7 +418,7 @@ export function dialogue(D, lines, term) {
 
     <section class="section wrap" id="quotables">
       <div class="section-head rv"><div><p class="eyebrow">Quotables</p><h2>The lines you quote most, <em>the script says least.</em></h2></div>
-        <p class="small muted tk-head-note">Famous lines, counted in the fan transcript. Tap a card to see it in context.</p></div>
+        <p class="small muted tk-head-note">Counted in the fan transcript. Tap a card to see it in context.</p></div>
       <div class="tk-wall">${quoteWall(D)}</div>
     </section>
 
@@ -383,7 +430,7 @@ export function dialogue(D, lines, term) {
 
     <section class="section wrap" id="nicknames">
       <div class="section-head rv"><div><p class="eyebrow">Nicknames</p><h2>Who calls whom what.</h2></div>
-        <p class="small muted tk-head-note">Counted whole-word, so “Kev” isn’t Kevin. A few are just a name, said a lot. Tap one to read every line.</p></div>
+        <p class="small muted tk-head-note">Counted as whole words, so “Kevin” doesn’t count as a “Kev”. Tap one for every line.</p></div>
       <div class="tk-nicks">${nickBoard(D)}</div>
     </section>
 
@@ -391,7 +438,7 @@ export function dialogue(D, lines, term) {
       <div class="section-head rv"><div><p class="eyebrow">Conversation</p><h2>Who answers whom.</h2></div></div>
       <div class="grid g-7-5" style="align-items:start">
         <div class="card rv"><h3 class="card-title">After each person speaks, who goes next</h3>
-          <p class="card-sub">Read across a row: after that person finishes a line, how often each of the others speaks next. Stronger colour means more often. Rows don’t reach 100% because people outside these twelve answer too.</p>
+          <p class="card-sub">Read across a row: after that person finishes a line, how often each of the others speaks next. Rows don’t reach 100% because people outside these ${nw(D.matrix.keys.length)} answer too.</p>
           <p class="matrix-hint">Swipe sideways to see all ${nw(D.matrix.keys.length)}.</p>
           <div class="matrix-wrap"><div class="matrix" id="mx"></div></div>
           <p class="tk-couples"><a class="link-arrow" href="#/couples">Couples Discount: the ships, measured</a></p></div>
@@ -399,9 +446,9 @@ export function dialogue(D, lines, term) {
       </div>
       <div class="card rv mt">
         <h3 class="card-title">The longest two-person scenes</h3>
-        <p class="card-sub">The longest unbroken stretches where only two people talk.${nScenesShuf ? ` ${nScenesShuf === 1 ? 'One is' : `${cap(nw(nScenesShuf))} are`} marked “shuffled transcript”. Those fan transcripts weave scenes together line by line, so the run may be two scenes taking turns.` : ''}</p>
-        <ol class="tk-scenes" id="scenes">${scenesList(D)}</ol>
-        ${D.scenes.length > 6 ? `<button type="button" class="btn ghost mt" id="scenes-more">Show all ${nw(D.scenes.length)}</button>` : ''}
+        ${nScenesShuf ? `<p class="card-sub">In the ${nScenesShuf === 1 ? 'one' : nw(nScenesShuf)} marked “shuffled transcript”, two scenes trade lines, so the run may be both scenes taking turns.</p>` : ''}
+        <ol class="tk-scenes" id="scenes">${scenesList(D, runs)}</ol>
+        ${nScenesMore ? `<button type="button" class="btn ghost mt" id="scenes-more">Show all ${nw(runs.length)}</button>` : ''}
       </div>
     </section>`,
     after() {
@@ -443,7 +490,21 @@ export function dialogue(D, lines, term) {
 
       // Revealing more takes the button away, so focus moves to the first thing it revealed.
       const focusEl = (el) => { if (!el) return; el.tabIndex = -1; el.focus({ preventScroll: true }); };
-      const scenesAll = () => { $('#scenes')?.classList.add('all'); $('#scenes-more')?.remove(); };
+      // Runs the data's top 12 left out have no lines yet. Fetch them from the transcript once they're on screen.
+      const fillScenes = (all) => {
+        $$('#scenes .tk-script[data-ep]').forEach((box) => {
+          if (!all && box.closest('.tk-extra')) return;
+          const e = D.episodes[+box.dataset.ep];
+          box.removeAttribute('data-ep');
+          lines(e.s).then((L) => {
+            if (!box.isConnected) return;
+            const sc = longestPair(L.filter((r) => r[0] === e.id));
+            if (sc && sc.n === e.run.n) box.innerHTML = sceneScript(sc);
+          }).catch(() => {});
+        });
+      };
+      fillScenes(false);
+      const scenesAll = () => { $('#scenes')?.classList.add('all'); $('#scenes-more')?.remove(); fillScenes(true); };
       $('#scenes-more')?.addEventListener('click', () => { scenesAll(); focusEl($('#scenes .tk-extra')); });
       if (saved?.tkScenes) scenesAll();
 
@@ -676,7 +737,7 @@ export function findings(D) {
   const sb = E[F.superBowl];
   const hours = E.filter((e) => e.hour);
   // michaelRatingCore drops every hour-long, Goodbye, Michael and the last three episodes (build_data.py).
-  const coreExtra = [F.goodbye, ...E.slice(-3).map((e) => e.id)].filter((id) => !E[id].hour).map((id) => E[id]);
+  const finalRun = E[E.length - 3];
   const holidays = E.filter((e) => e.holiday);
   // What kind of night each hour-long was, from the data: the Super Bowl slot, a season's last or first episode, Christmas.
   const firsts = new Set(D.seasons.map((s) => s.first));
@@ -701,13 +762,19 @@ export function findings(D) {
   const list = F.twssList;
   const multi = list.filter((x) => x.n > 1);
   const twMichael = F.twssBy.find((t) => t.k === 'Michael');
+  // Section Five's line comes from the four cards under it, so it can't call a pass a miss.
+  const fiveP = [['bigger casts', F.speakersCorr.p], ['holiday episodes', F.holiday.p], ['longer scripts', F.linesCorr.p], ['Michael’s share of lines', F.michaelShareCorr.p]];
+  const pass = fiveP.filter(([, p]) => p < 0.05).map(([k]) => k);
+  const fiveLine = !pass.length ? 'A few more I checked. None of them clears the bar, which is a result too.'
+    : pass.length === 1 && pass[0] === 'bigger casts' ? 'A few more I checked. Only bigger casts clears the bar, and that turns out to be the era.'
+    : `A few more I checked. ${pass.length === 1 ? 'Only one clears' : `${cap(nw(pass.length))} clear`} the bar: ${and(pass)}.`;
   return {
     title: 'Findings',
     html: `
     <section class="wrap page-head">
       <p class="eyebrow">Findings</p>
       <h1>What the numbers <em>actually say.</em></h1>
-      <p class="lede">Five questions fans argue about, answered with the data and a couple of statistical tests. I explain the tests in plain words as I go. No prior stats needed.</p>
+      <p class="lede">Five questions fans argue about, answered with the data and a couple of statistical tests.</p>
     </section>
     <div class="wrap">
 
@@ -717,16 +784,16 @@ export function findings(D) {
         <h2>Did the show get worse after Michael left?</h2>
         <span class="verdict yes">Yes, clearly</span>
         <div class="prose mt">
-          <p>With Michael, through ${ttl(bye)}, episodes average <strong>${M.meanA.toFixed(2)}</strong> on IMDb. After, <strong>${M.meanB.toFixed(2)}</strong>. That is a drop of ${(M.meanA - M.meanB).toFixed(2)} points across ${M.nA} and ${M.nB} episodes.</p>
-          <p>It isn’t a few big nights doing the work. Take out the ${hours.length} hour-long episodes, plus ${and(coreExtra.map(ttl))}, and it’s still <strong>${C.meanA.toFixed(2)}</strong> against <strong>${C.meanB.toFixed(2)}</strong> over ${C.nA} and ${C.nB} episodes (${pEq(C.p)}).</p>
+          <p>Up to and including ${ttl(bye)}, ${M.nA} episodes average <strong>${M.meanA.toFixed(2)}</strong> on IMDb. The ${M.nB} after it average <strong>${M.meanB.toFixed(2)}</strong>, a drop of ${(M.meanA - M.meanB).toFixed(2)} points.</p>
+          <p>It isn’t a few big nights doing the work. Take out the ${hours.length} hour-long episodes, ${ttl(bye)} and the final run from ${ttl(finalRun)} on, and it’s still <strong>${C.meanA.toFixed(2)}</strong> against <strong>${C.meanB.toFixed(2)}</strong> over ${C.nA} and ${C.nB} episodes (${pEq(C.p)}).</p>
           <p>Viewers fall harder, from ${fmt.m(V.meanA)} to ${fmt.m(V.meanB)} an episode. That leaves out ${ttl(sb)}, which aired after the Super Bowl to ${fmt.m(sb.v)}, so it doesn’t flatter the early years.</p>
         </div>
-        <div class="explain"><b>How sure is that?</b> I shuffled the labels “with Michael” and “without” at random ${fmt.int(SHUFFLES)} times and checked how often chance alone made a gap this big. ${permText(F.michaelRatingPerm)} A Welch t-test agrees (${pEq(M.p)}).<br><br><b>The catch.</b> Network TV was losing viewers everywhere by 2011, so not all of the viewer drop is Michael. The rating drop is harder to explain away.</div>
+        <div class="explain"><b>The check.</b> I shuffled the labels “with Michael” and “without” at random ${fmt.int(SHUFFLES)} times and counted how often chance alone made a gap this big. ${permText(F.michaelRatingPerm)} A Welch t-test agrees (${pEq(M.p)}).<br><br><b>The catch.</b> Network TV was losing viewers everywhere by 2011, so not all of the viewer drop is Michael.</div>
       </div>
       <div>
-        <div class="card"><h3 class="card-title">IMDb rating, every episode</h3><p class="card-sub">Dots are episodes. The solid line is a 9-episode moving average, worked out separately on each side of Michael leaving. The flat lines are the two era averages.</p><div id="f-m1"></div></div>
-        <div class="card mt"><h3 class="card-title">US viewers, millions</h3><p class="card-sub">${esc(sb.t)} (${fmt.m(sb.v)}, after the Super Bowl) runs off the top, and it’s left out of the era averages, the same as in the text.</p><div id="f-m2"></div></div>
-        <div class="card mt"><h3 class="card-title">But more Michael doesn’t mean a better episode</h3><p class="card-sub">Through <em>${esc(bye.t)}</em>, Michael’s share of the lines against the rating. ${R}${fmt.num(F.michaelShareCorr.r)}, basically flat. He mattered to the show, not to every scene.</p><div id="f-m3"></div></div>
+        <div class="card"><h3 class="card-title">IMDb rating, every episode</h3><p class="card-sub">The solid line is a 9-episode moving average, on each side of Michael leaving.</p><div id="f-m1"></div></div>
+        <div class="card mt"><h3 class="card-title">US viewers, millions</h3><p class="card-sub"><em>${esc(sb.t)}</em> (${fmt.m(sb.v)}, after the Super Bowl) runs off the top.</p><div id="f-m2"></div></div>
+        <div class="card mt"><h3 class="card-title">But more Michael doesn’t mean a better episode</h3><p class="card-sub">Episodes through <em>${esc(bye.t)}</em>. ${R}${fmt.num(F.michaelShareCorr.r)}, basically flat. He mattered to the show, not to every scene.</p><div id="f-m3"></div></div>
       </div>
     </section>
 
@@ -741,15 +808,15 @@ export function findings(D) {
           <p>Across the whole show those episodes average <strong>${F.twssAll.meanA.toFixed(2)}</strong> against <strong>${F.twssAll.meanB.toFixed(2)}</strong>, and that gap passes the usual test (${pEq(F.twssAll.p)}).</p>
           <p>But the joke lives in the Michael years, and the Michael years rated higher anyway. Compare only episodes through ${ttl(bye)} and the gap shrinks to <strong>${(F.twssMichael.meanA - F.twssMichael.meanB).toFixed(2)}</strong>, with ${pEq(F.twssMichael.p)}. That’s the kind of gap random noise makes all the time.</p>
         </div>
-        <div class="explain"><b>What a p-value means here.</b> It’s the chance of seeing a gap at least this big if the joke made no difference at all. Under 0.05 is the usual bar for “probably real”. ${fmt.p(F.twssMichael.p)} is well over it.<br><br><b>A correction.</b> My 2023 version of this test counted every hour-long episode twice, because of how I merged the data. This one counts each episode once.</div>
+        <div class="explain"><b>What a p-value means here.</b> It’s the chance of seeing a gap at least this big if the joke made no difference. Under 0.05 is the usual bar for “probably real”, and ${fmt.p(F.twssMichael.p)} is well over it.<br><br><b>A correction.</b> My 2023 version of this test counted every hour-long episode twice.</div>
       </div>
       <div>
-        <div class="card"><div class="card-head"><div><h3 class="card-title">Ratings, with and without the joke</h3><p class="card-sub">Each dot is an episode. The tall bar marks the average.</p></div>
+        <div class="card"><div class="card-head"><div><h3 class="card-title">Ratings, with and without the joke</h3></div>
           <div class="toggle" id="tw-t" role="group" aria-label="Which episodes"><button type="button" class="on" aria-pressed="true" data-v="all">All episodes</button><button type="button" aria-pressed="false" data-v="m">Michael era only</button></div></div>
           <div id="f-t1"></div><p class="small muted" id="tw-note"></p></div>
         <div class="card mt">
           <h3 class="card-title">That’s what she said: all of them, with the setups</h3>
-          <p class="card-sub">In air order. The grey line is the setup, when the transcript has it, and the line itself is in the speaker’s colour.</p>
+          <p class="card-sub">In air order.</p>
           <div class="tk-chips">
             <span class="chip"><b>${fmt.int(F.twssCount)}</b> times</span>
             <span class="chip"><b>${fmt.int(F.twssLines)}</b> lines</span>
@@ -770,14 +837,14 @@ export function findings(D) {
         <h2>Are the hour-long episodes better?</h2>
         <span class="verdict yes">Yes, by a lot</span>
         <div class="prose mt">
-          <p>${F.hour.nA} episodes ran an hour. They average <strong>${F.hour.meanA.toFixed(2)}</strong> against <strong>${F.hour.meanB.toFixed(2)}</strong> for everything else, a gap of ${(F.hour.meanA - F.hour.meanB).toFixed(2)}. On ratings, that’s a bigger gap than Michael leaving (${(M.meanA - M.meanB).toFixed(2)}).</p>
+          <p>${F.hour.nA} hour-long episodes have one IMDb score each. They average <strong>${F.hour.meanA.toFixed(2)}</strong> against <strong>${F.hour.meanB.toFixed(2)}</strong> for everything else, a gap of ${(F.hour.meanA - F.hour.meanB).toFixed(2)}. On ratings, that’s a bigger gap than Michael leaving (${(M.meanA - M.meanB).toFixed(2)}).</p>
           <p>Part of it is timing: ${F.hourMichael.nA} of the ${F.hour.nA} aired before Michael left, when everything rated higher. Compare only episodes up to <em>${esc(bye.t)}</em> and the hour-longs still come out ${(F.hourMichael.meanA - F.hourMichael.meanB).toFixed(2)} ahead (${pEq(F.hourMichael.p)}).</p>
           <p>This data can’t tell the extra time apart from the occasion. ${cap(nw(used.size))} of the ${nw(hours.length)} were occasions: ${and(occasions)}.${otherHours.length ? ` The other ${otherHours.length === 1 ? 'one is' : `${nw(otherHours.length)} are`} ${and(otherHours.map(ttl))}${/\.$/.test(otherHours[otherHours.length - 1].t) ? '' : '.'}` : ''}</p>
           <div class="tk-chips tk-ep-chips">${hours.map((e) => `<a class="chip" href="#/episode/${e.id}">${esc(e.t)} <b>${e.r.toFixed(1)}</b></a>`).join('')}</div>
         </div>
-        <div class="explain"><b>How sure?</b> ${pEq(F.hour.p)}. Only ${F.hour.nA} episodes, but the gap is large enough that it doesn’t matter much.</div>
+        <div class="explain"><b>The check.</b> ${pEq(F.hour.p)}. ${F.hour.nA} episodes is a small group, but the gap is big enough to survive it.</div>
       </div>
-      <div><div class="card"><h3 class="card-title">Hour-long episodes against the rest</h3><p class="card-sub">Niagara and The Delivery each aired as one hour, but the ratings data lists them as two episodes with separate IMDb scores, so their halves count as half-hours here.</p><div id="f-h1"></div></div></div>
+      <div><div class="card"><h3 class="card-title">Hour-long episodes against the rest</h3><p class="card-sub"><em>Niagara</em> and <em>The Delivery</em> aired as one hour each but are rated as two halves, so they count as half-hours here.</p><div id="f-h1"></div></div></div>
     </section>
 
     <section class="finding" id="andy">
@@ -790,7 +857,7 @@ export function findings(D) {
           <p>But his big episodes are in seasons 8 and 9, when everything rated lower. Look inside each era separately and it mostly disappears: ${R}${fmt.num(andy.early.r)} in seasons 1 to 7, ${R}${fmt.num(andy.late.r)} in 8 and 9, and ${andy.early.p >= 0.05 && andy.late.p >= 0.05 ? 'neither passes the test' : 'only one passes the test'}.</p>
           <p>So Andy talks a lot in a period that rated badly. That’s not the same as Andy making it rate badly.</p>
         </div>
-        <div class="explain"><b>Why this matters.</b> This is the same trap as the “that’s what she said” result, the other way round. When two things both depend on the era, they’ll look related even if they have nothing to do with each other.</div>
+        <div class="explain"><b>Why this matters.</b> It’s the “that’s what she said” trap the other way round: when two things both depend on the era, they look related even when they aren’t.</div>
       </div>
       <div><div class="card"><h3 class="card-title">Andy’s share of the lines against the rating</h3><p class="card-sub">The line fits all of them together.</p>
         <div class="legend"><span><i class="ring" style="background:var(--accent)"></i>Seasons 1 to 7</span><span><i class="ring" style="background:var(--ink-3)"></i>Seasons 8 and 9</span></div><div id="f-a1"></div></div></div>
@@ -801,7 +868,7 @@ export function findings(D) {
         <p class="fnum">Five</p>
         <h2>Things that don’t matter.</h2>
         <span class="verdict">No effect</span>
-        <div class="prose mt"><p>A few more I checked. None of them clears the bar, which is a result too.</p></div>
+        <div class="prose mt"><p>${fiveLine}</p></div>
       </div>
       <div class="grid g2">
         <div class="card"><h3 class="card-title">Holiday episodes</h3><p class="card-sub">Christmas, Halloween, Valentine’s, Diwali, St. Patrick’s.</p><div class="stat-value">${fmt.signed(F.holiday.meanA - F.holiday.meanB)}</div>
@@ -809,7 +876,7 @@ export function findings(D) {
           <details class="tk-more"><summary>Which ${F.holiday.nA}</summary><p class="small">${holidays.map((e) => `<a href="#/episode/${e.id}">${esc(e.t)}</a>`).join(' · ')}</p></details></div>
         <div class="card"><h3 class="card-title">Longer scripts</h3><p class="card-sub">Lines per episode against rating, half-hours only.</p><div class="stat-value">${R}${fmt.num(F.linesCorr.r)}</div><p class="small muted">${pEq(F.linesCorr.p)}. A busier script isn’t a better one.</p></div>
         <div class="card"><h3 class="card-title">Bigger casts</h3><p class="card-sub">Different speakers per half-hour against rating.</p><div class="stat-value">${R}${fmt.num(F.speakersCorr.r)}</div><p class="small muted">${pEq(F.speakersCorr.p)}, and that’s the era. Half-hours through <em>${esc(bye.t)}</em> have ${fmt.dec(mean(castA, (e) => e.speakers))} speakers on average and rate ${mean(castA, (e) => e.r).toFixed(2)}. After it, ${fmt.dec(mean(castB, (e) => e.speakers))} speakers and ${mean(castB, (e) => e.r).toFixed(2)}. Inside each season it’s ${R}${fmt.num(F.speakersWithin.r)} (${pEq(F.speakersWithin.p)}), which is nothing.</p></div>
-        <div class="card"><h3 class="card-title">Michael’s screen time</h3><p class="card-sub">His share of lines, through <em>${esc(bye.t)}</em>.</p><div class="stat-value">${R}${fmt.num(F.michaelShareCorr.r)}</div><p class="small muted">${pEq(F.michaelShareCorr.p)}. See finding one.</p></div>
+        <div class="card"><h3 class="card-title">Michael’s share of lines</h3><p class="card-sub">Through <em>${esc(bye.t)}</em>.</p><div class="stat-value">${R}${fmt.num(F.michaelShareCorr.r)}</div><p class="small muted">${pEq(F.michaelShareCorr.p)}. See finding one.</p></div>
       </div>
     </section>
     </div>`,
