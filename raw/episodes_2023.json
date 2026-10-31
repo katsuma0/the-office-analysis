@@ -1,0 +1,2012 @@
+[
+ {
+  "title": "Pilot",
+  "s": 1,
+  "e": 1,
+  "r": 7.4,
+  "date": "Mar 24, 2005",
+  "v": "11200000",
+  "dir": "Ken Kwapis",
+  "wri": "Ricky Gervais & Stephen Merchant and Greg Daniels"
+ },
+ {
+  "title": "Diversity Day",
+  "s": 1,
+  "e": 2,
+  "r": 8.3,
+  "date": "Mar 29, 2005",
+  "v": "6e+06",
+  "dir": "Ken Kwapis",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Health Care",
+  "s": 1,
+  "e": 3,
+  "r": 7.7,
+  "date": "Apr 05, 2005",
+  "v": "5800000",
+  "dir": "Ken Whittingham",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "The Alliance",
+  "s": 1,
+  "e": 4,
+  "r": 8.0,
+  "date": "Apr 12, 2005",
+  "v": "5400000",
+  "dir": "Bryan Gordon",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "Basketball",
+  "s": 1,
+  "e": 5,
+  "r": 8.4,
+  "date": "Apr 19, 2005",
+  "v": "5e+06",
+  "dir": "Greg Daniels",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "Hot Girl",
+  "s": 1,
+  "e": 6,
+  "r": 7.7,
+  "date": "Apr 26, 2005",
+  "v": "4800000",
+  "dir": "Amy Heckerling",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "The Dundies",
+  "s": 2,
+  "e": 1,
+  "r": 8.7,
+  "date": "Sep 20, 2005",
+  "v": "9e+06",
+  "dir": "Greg Daniels",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Sexual Harassment",
+  "s": 2,
+  "e": 2,
+  "r": 8.2,
+  "date": "Sep 27, 2005",
+  "v": "7130000",
+  "dir": "Ken Kwapis",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Office Olympics",
+  "s": 2,
+  "e": 3,
+  "r": 8.3,
+  "date": "Oct 04, 2005",
+  "v": "8300000",
+  "dir": "Paul Feig",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "The Fire",
+  "s": 2,
+  "e": 4,
+  "r": 8.3,
+  "date": "Oct 11, 2005",
+  "v": "7600000",
+  "dir": "Ken Kwapis",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Halloween",
+  "s": 2,
+  "e": 5,
+  "r": 8.1,
+  "date": "Oct 18, 2005",
+  "v": "8e+06",
+  "dir": "Paul Feig",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "The Fight",
+  "s": 2,
+  "e": 6,
+  "r": 8.1,
+  "date": "Nov 01, 2005",
+  "v": "7900000",
+  "dir": "Ken Kwapis",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "The Client",
+  "s": 2,
+  "e": 7,
+  "r": 8.6,
+  "date": "Nov 08, 2005",
+  "v": "7500000",
+  "dir": "Greg Daniels",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Performance Review",
+  "s": 2,
+  "e": 8,
+  "r": 8.1,
+  "date": "Nov 15, 2005",
+  "v": "8e+06",
+  "dir": "Paul Feig",
+  "wri": "Larry Wilmore"
+ },
+ {
+  "title": "E-Mail Surveillance",
+  "s": 2,
+  "e": 9,
+  "r": 8.4,
+  "date": "Nov 22, 2005",
+  "v": "8100000",
+  "dir": "Paul Feig",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Christmas Party",
+  "s": 2,
+  "e": 10,
+  "r": 8.9,
+  "date": "Dec 06, 2005",
+  "v": "9700000",
+  "dir": "Charles McDougall",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "Booze Cruise",
+  "s": 2,
+  "e": 11,
+  "r": 8.6,
+  "date": "Jan 05, 2006",
+  "v": "8700000",
+  "dir": "Ken Kwapis",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "The Injury",
+  "s": 2,
+  "e": 12,
+  "r": 9.1,
+  "date": "Jan 12, 2006",
+  "v": "10300000",
+  "dir": "Bryan Gordon",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "The Secret",
+  "s": 2,
+  "e": 13,
+  "r": 8.2,
+  "date": "Jan 19, 2006",
+  "v": "8700000",
+  "dir": "Dennie Gordon",
+  "wri": "Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "The Carpet",
+  "s": 2,
+  "e": 14,
+  "r": 7.8,
+  "date": "Jan 26, 2006",
+  "v": "8600000",
+  "dir": "Victor Nelli, Jr.",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Boys and Girls",
+  "s": 2,
+  "e": 15,
+  "r": 8.1,
+  "date": "Feb 02, 2006",
+  "v": "5420000",
+  "dir": "Dennie Gordon",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Valentine's Day",
+  "s": 2,
+  "e": 16,
+  "r": 8.3,
+  "date": "Feb 09, 2006",
+  "v": "8950000",
+  "dir": "Greg Daniels",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "Dwight's Speech",
+  "s": 2,
+  "e": 17,
+  "r": 8.4,
+  "date": "Mar 02, 2006",
+  "v": "8400000",
+  "dir": "Charles McDougall",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Take Your Daughter to Work Day",
+  "s": 2,
+  "e": 18,
+  "r": 8.3,
+  "date": "Mar 16, 2006",
+  "v": "8800000",
+  "dir": "Victor Nelli, Jr.",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Michael's Birthday",
+  "s": 2,
+  "e": 19,
+  "r": 8.1,
+  "date": "Mar 30, 2006",
+  "v": "7800000",
+  "dir": "Ken Whittingham",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "Drug Testing",
+  "s": 2,
+  "e": 20,
+  "r": 8.4,
+  "date": "Apr 27, 2006",
+  "v": "7800000",
+  "dir": "Greg Daniels",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Conflict Resolution",
+  "s": 2,
+  "e": 21,
+  "r": 8.7,
+  "date": "May 04, 2006",
+  "v": "7400000",
+  "dir": "Charles McDougall",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "Casino Night",
+  "s": 2,
+  "e": 22,
+  "r": 9.4,
+  "date": "May 11, 2006",
+  "v": "7600000",
+  "dir": "Ken Kwapis",
+  "wri": "Steve Carell"
+ },
+ {
+  "title": "Gay Witch Hunt",
+  "s": 3,
+  "e": 1,
+  "r": 9.0,
+  "date": "Sep 21, 2006",
+  "v": "9110000",
+  "dir": "Ken Kwapis",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "The Convention",
+  "s": 3,
+  "e": 2,
+  "r": 8.2,
+  "date": "Sep 28, 2006",
+  "v": "7780000",
+  "dir": "Ken Whittingham",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "The Coup",
+  "s": 3,
+  "e": 3,
+  "r": 8.5,
+  "date": "Oct 05, 2006",
+  "v": "8890000",
+  "dir": "Greg Daniels",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Grief Counseling",
+  "s": 3,
+  "e": 4,
+  "r": 8.0,
+  "date": "Oct 12, 2006",
+  "v": "8830000",
+  "dir": "Roger Nygard",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Initiation",
+  "s": 3,
+  "e": 5,
+  "r": 8.1,
+  "date": "Oct 19, 2006",
+  "v": "8460000",
+  "dir": "Randall Einhorn",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Diwali",
+  "s": 3,
+  "e": 6,
+  "r": 7.9,
+  "date": "Nov 02, 2006",
+  "v": "8810000",
+  "dir": "Miguel Arteta",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Branch Closing",
+  "s": 3,
+  "e": 7,
+  "r": 8.6,
+  "date": "Nov 09, 2006",
+  "v": "8050000",
+  "dir": "Tucker Gates",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "The Merger",
+  "s": 3,
+  "e": 8,
+  "r": 8.7,
+  "date": "Nov 16, 2006",
+  "v": "8630000",
+  "dir": "Ken Whittingham",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "The Convict",
+  "s": 3,
+  "e": 9,
+  "r": 8.3,
+  "date": "Nov 30, 2006",
+  "v": "9070000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Ricky Gervais & Stephen Merchant"
+ },
+ {
+  "title": "A Benihana Christmas",
+  "s": 3,
+  "e": 10,
+  "r": 8.8,
+  "date": "Dec 14, 2006",
+  "v": "8440000",
+  "dir": "Harold Ramis",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "A Benihana Christmas",
+  "s": 3,
+  "e": 10,
+  "r": 8.8,
+  "date": "Dec 14, 2006",
+  "v": "8440000",
+  "dir": "Harold Ramis",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Back from Vacation",
+  "s": 3,
+  "e": 11,
+  "r": 8.6,
+  "date": "Jan 04, 2007",
+  "v": "8800000",
+  "dir": "Julian Farino",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Traveling Salesmen",
+  "s": 3,
+  "e": 12,
+  "r": 8.6,
+  "date": "Jan 11, 2007",
+  "v": "10120000",
+  "dir": "Greg Daniels",
+  "wri": "Michael Schur & Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "The Return",
+  "s": 3,
+  "e": 13,
+  "r": 8.8,
+  "date": "Jan 18, 2007",
+  "v": "10200000",
+  "dir": "Greg Daniels",
+  "wri": "Lee Eisenberg & Gene Stupnitsky & Michael Schur"
+ },
+ {
+  "title": "Ben Franklin",
+  "s": 3,
+  "e": 14,
+  "r": 8.0,
+  "date": "Feb 01, 2007",
+  "v": "10110000",
+  "dir": "Randall Einhorn",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Phyllis' Wedding",
+  "s": 3,
+  "e": 15,
+  "r": 8.2,
+  "date": "Feb 08, 2007",
+  "v": "8840000",
+  "dir": "Ken Whittingham",
+  "wri": "Caroline Williams"
+ },
+ {
+  "title": "Business School",
+  "s": 3,
+  "e": 16,
+  "r": 8.9,
+  "date": "Feb 15, 2007",
+  "v": "8840000",
+  "dir": "Joss Whedon",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "Cocktails",
+  "s": 3,
+  "e": 17,
+  "r": 8.5,
+  "date": "Feb 22, 2007",
+  "v": "8300000",
+  "dir": "J. J. Abrams",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "The Negotiation",
+  "s": 3,
+  "e": 18,
+  "r": 9.0,
+  "date": "Apr 05, 2007",
+  "v": "6740000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "Safety Training",
+  "s": 3,
+  "e": 19,
+  "r": 8.8,
+  "date": "Apr 12, 2007",
+  "v": "7710000",
+  "dir": "Harold Ramis",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Product Recall",
+  "s": 3,
+  "e": 20,
+  "r": 8.7,
+  "date": "Apr 26, 2007",
+  "v": "7560000",
+  "dir": "Randall Einhorn",
+  "wri": "Justin Spitzer & Brent Forrester"
+ },
+ {
+  "title": "Women's Appreciation",
+  "s": 3,
+  "e": 21,
+  "r": 8.8,
+  "date": "May 03, 2007",
+  "v": "7e+06",
+  "dir": "Tucker Gates",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "Beach Games",
+  "s": 3,
+  "e": 22,
+  "r": 9.2,
+  "date": "May 10, 2007",
+  "v": "7200000",
+  "dir": "Harold Ramis",
+  "wri": "Jennifer Celotta & Greg Daniels"
+ },
+ {
+  "title": "The Job",
+  "s": 3,
+  "e": 23,
+  "r": 9.3,
+  "date": "May 17, 2007",
+  "v": "7880000",
+  "dir": "Ken Kwapis",
+  "wri": "Paul Lieberstein & Michael Schur"
+ },
+ {
+  "title": "The Job",
+  "s": 3,
+  "e": 23,
+  "r": 9.3,
+  "date": "May 17, 2007",
+  "v": "7880000",
+  "dir": "Ken Kwapis",
+  "wri": "Paul Lieberstein & Michael Schur"
+ },
+ {
+  "title": "Fun Run",
+  "s": 4,
+  "e": 1,
+  "r": 8.8,
+  "date": "Sep 27, 2007",
+  "v": "9700000",
+  "dir": "Greg Daniels",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "Fun Run",
+  "s": 4,
+  "e": 1,
+  "r": 8.8,
+  "date": "Sep 27, 2007",
+  "v": "9700000",
+  "dir": "Greg Daniels",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "Dunder Mifflin Infinity",
+  "s": 4,
+  "e": 2,
+  "r": 8.3,
+  "date": "Oct 04, 2007",
+  "v": "8490000",
+  "dir": "Craig Zisk",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "Dunder Mifflin Infinity",
+  "s": 4,
+  "e": 2,
+  "r": 8.3,
+  "date": "Oct 04, 2007",
+  "v": "8490000",
+  "dir": "Craig Zisk",
+  "wri": "Michael Schur"
+ },
+ {
+  "title": "Launch Party",
+  "s": 4,
+  "e": 3,
+  "r": 8.4,
+  "date": "Oct 11, 2007",
+  "v": "8910000",
+  "dir": "Ken Whittingham",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Launch Party",
+  "s": 4,
+  "e": 3,
+  "r": 8.4,
+  "date": "Oct 11, 2007",
+  "v": "8910000",
+  "dir": "Ken Whittingham",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Money",
+  "s": 4,
+  "e": 4,
+  "r": 8.7,
+  "date": "Oct 18, 2007",
+  "v": "8500000",
+  "dir": "Paul Lieberstein",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Money",
+  "s": 4,
+  "e": 4,
+  "r": 8.7,
+  "date": "Oct 18, 2007",
+  "v": "8500000",
+  "dir": "Paul Lieberstein",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Local Ad",
+  "s": 4,
+  "e": 5,
+  "r": 8.8,
+  "date": "Oct 25, 2007",
+  "v": "8980000",
+  "dir": "Jason Reitman",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Branch Wars",
+  "s": 4,
+  "e": 6,
+  "r": 8.5,
+  "date": "Nov 01, 2007",
+  "v": "8390000",
+  "dir": "Joss Whedon",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Survivor Man",
+  "s": 4,
+  "e": 7,
+  "r": 8.2,
+  "date": "Nov 08, 2007",
+  "v": "8290000",
+  "dir": "Paul Feig",
+  "wri": "Steve Carell"
+ },
+ {
+  "title": "The Deposition",
+  "s": 4,
+  "e": 8,
+  "r": 8.7,
+  "date": "Nov 15, 2007",
+  "v": "8860000",
+  "dir": "Julian Farino",
+  "wri": "Lester Lewis"
+ },
+ {
+  "title": "Dinner Party",
+  "s": 4,
+  "e": 9,
+  "r": 9.5,
+  "date": "Apr 10, 2008",
+  "v": "9220000",
+  "dir": "Paul Feig",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "Chair Model",
+  "s": 4,
+  "e": 10,
+  "r": 8.0,
+  "date": "Apr 17, 2008",
+  "v": "9810000",
+  "dir": "Jeffrey Blitz",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Night Out",
+  "s": 4,
+  "e": 11,
+  "r": 8.6,
+  "date": "Apr 24, 2008",
+  "v": "7560000",
+  "dir": "Ken Whittingham",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Did I Stutter?",
+  "s": 4,
+  "e": 12,
+  "r": 8.3,
+  "date": "May 01, 2008",
+  "v": "7670000",
+  "dir": "Randall Einhorn",
+  "wri": "Brent Forrester & Justin Spitzer"
+ },
+ {
+  "title": "Job Fair",
+  "s": 4,
+  "e": 13,
+  "r": 7.7,
+  "date": "May 08, 2008",
+  "v": "7220000",
+  "dir": "Tucker Gates",
+  "wri": "Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "Goodbye, Toby",
+  "s": 4,
+  "e": 14,
+  "r": 9.4,
+  "date": "May 15, 2008",
+  "v": "8070000",
+  "dir": "Paul Feig",
+  "wri": "Jennifer Celotta & Paul Lieberstein"
+ },
+ {
+  "title": "Goodbye, Toby",
+  "s": 4,
+  "e": 14,
+  "r": 9.4,
+  "date": "May 15, 2008",
+  "v": "8070000",
+  "dir": "Paul Feig",
+  "wri": "Jennifer Celotta & Paul Lieberstein"
+ },
+ {
+  "title": "Weight Loss",
+  "s": 5,
+  "e": 1,
+  "r": 8.8,
+  "date": "Sep 25, 2008",
+  "v": "9200000",
+  "dir": "Paul Feig",
+  "wri": "Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "Weight Loss",
+  "s": 5,
+  "e": 1,
+  "r": 8.8,
+  "date": "Sep 25, 2008",
+  "v": "9200000",
+  "dir": "Paul Feig",
+  "wri": "Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "Business Ethics",
+  "s": 5,
+  "e": 2,
+  "r": 8.2,
+  "date": "Oct 09, 2008",
+  "v": "8990000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Ryan Koh"
+ },
+ {
+  "title": "Baby Shower",
+  "s": 5,
+  "e": 3,
+  "r": 8.0,
+  "date": "Oct 16, 2008",
+  "v": "8070000",
+  "dir": "Greg Daniels",
+  "wri": "Aaron Shure"
+ },
+ {
+  "title": "Crime Aid",
+  "s": 5,
+  "e": 4,
+  "r": 8.1,
+  "date": "Oct 23, 2008",
+  "v": "7740000",
+  "dir": "Jennifer Celotta",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Employee Transfer",
+  "s": 5,
+  "e": 5,
+  "r": 8.0,
+  "date": "Oct 30, 2008",
+  "v": "9320000",
+  "dir": "David Rogers",
+  "wri": "Anthony Q. Farrell"
+ },
+ {
+  "title": "Customer Survey",
+  "s": 5,
+  "e": 6,
+  "r": 8.5,
+  "date": "Nov 06, 2008",
+  "v": "8350000",
+  "dir": "Stephen Merchant",
+  "wri": "Lester Lewis"
+ },
+ {
+  "title": "Business Trip",
+  "s": 5,
+  "e": 7,
+  "r": 8.2,
+  "date": "Nov 13, 2008",
+  "v": "8180000",
+  "dir": "Randall Einhorn",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "Frame Toby",
+  "s": 5,
+  "e": 8,
+  "r": 8.6,
+  "date": "Nov 20, 2008",
+  "v": "8400000",
+  "dir": "Jason Reitman",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "The Surplus",
+  "s": 5,
+  "e": 9,
+  "r": 8.8,
+  "date": "Dec 04, 2008",
+  "v": "8330000",
+  "dir": "Paul Feig",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "Moroccan Christmas",
+  "s": 5,
+  "e": 10,
+  "r": 8.4,
+  "date": "Dec 11, 2008",
+  "v": "8790000",
+  "dir": "Paul Feig",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "The Duel",
+  "s": 5,
+  "e": 11,
+  "r": 8.7,
+  "date": "Jan 15, 2009",
+  "v": "8500000",
+  "dir": "Dean Holland",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Prince Family Paper",
+  "s": 5,
+  "e": 12,
+  "r": 8.0,
+  "date": "Jan 22, 2009",
+  "v": "8740000",
+  "dir": "Asaad Kelada",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Stress Relief",
+  "s": 5,
+  "e": 13,
+  "r": 9.7,
+  "date": "Feb 01, 2009",
+  "v": "22910000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Stress Relief",
+  "s": 5,
+  "e": 13,
+  "r": 9.7,
+  "date": "Feb 01, 2009",
+  "v": "22910000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Lecture Circuit: Part 1",
+  "s": 5,
+  "e": 14,
+  "r": 8.2,
+  "date": "Feb 05, 2009",
+  "v": "8390000",
+  "dir": "Ken Kwapis",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Lecture Circuit: Part 2",
+  "s": 5,
+  "e": 15,
+  "r": 8.1,
+  "date": "Feb 12, 2009",
+  "v": "8890000",
+  "dir": "Ken Kwapis",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Blood Drive",
+  "s": 5,
+  "e": 16,
+  "r": 8.0,
+  "date": "Mar 05, 2009",
+  "v": "8630000",
+  "dir": "Randall Einhorn",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "Golden Ticket",
+  "s": 5,
+  "e": 17,
+  "r": 8.7,
+  "date": "Mar 12, 2009",
+  "v": "7510000",
+  "dir": "Randall Einhorn",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "New Boss",
+  "s": 5,
+  "e": 18,
+  "r": 8.3,
+  "date": "Mar 19, 2009",
+  "v": "7950000",
+  "dir": "Paul Feig",
+  "wri": "Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "Two Weeks",
+  "s": 5,
+  "e": 19,
+  "r": 8.4,
+  "date": "Mar 26, 2009",
+  "v": "8450000",
+  "dir": "Paul Lieberstein",
+  "wri": "Aaron Shure"
+ },
+ {
+  "title": "Dream Team",
+  "s": 5,
+  "e": 20,
+  "r": 8.3,
+  "date": "Apr 09, 2009",
+  "v": "7200000",
+  "dir": "Paul Feig",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Michael Scott Paper Company",
+  "s": 5,
+  "e": 21,
+  "r": 8.7,
+  "date": "Apr 09, 2009",
+  "v": "7940000",
+  "dir": "Gene Stupnitsky",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Heavy Competition",
+  "s": 5,
+  "e": 22,
+  "r": 8.7,
+  "date": "Apr 16, 2009",
+  "v": "8240000",
+  "dir": "Ken Whittingham",
+  "wri": "Ryan Koh"
+ },
+ {
+  "title": "Broke",
+  "s": 5,
+  "e": 23,
+  "r": 9.3,
+  "date": "Apr 23, 2009",
+  "v": "7210000",
+  "dir": "Steve Carell",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Casual Friday",
+  "s": 5,
+  "e": 24,
+  "r": 8.3,
+  "date": "Apr 30, 2009",
+  "v": "7310000",
+  "dir": "Brent Forrester",
+  "wri": "Anthony Q. Farrell"
+ },
+ {
+  "title": "Cafe Disco",
+  "s": 5,
+  "e": 25,
+  "r": 8.8,
+  "date": "May 07, 2009",
+  "v": "7710000",
+  "dir": "Randall Einhorn",
+  "wri": "Warren Lieberstein & Halsted Sullivan"
+ },
+ {
+  "title": "Company Picnic",
+  "s": 5,
+  "e": 26,
+  "r": 9.0,
+  "date": "May 14, 2009",
+  "v": "6720000",
+  "dir": "Ken Kwapis",
+  "wri": "Jennifer Celotta & Paul Lieberstein"
+ },
+ {
+  "title": "Gossip",
+  "s": 6,
+  "e": 1,
+  "r": 8.8,
+  "date": "Sep 17, 2009",
+  "v": "8200000",
+  "dir": "Paul Lieberstein",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "The Meeting",
+  "s": 6,
+  "e": 2,
+  "r": 8.1,
+  "date": "Sep 24, 2009",
+  "v": "7330000",
+  "dir": "Randall Einhorn",
+  "wri": "Aaron Shure"
+ },
+ {
+  "title": "The Promotion",
+  "s": 6,
+  "e": 3,
+  "r": 8.0,
+  "date": "Oct 01, 2009",
+  "v": "7280000",
+  "dir": "Jennifer Celotta",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Niagara: Part 1",
+  "s": 6,
+  "e": 4,
+  "r": 9.4,
+  "date": "Oct 08, 2009",
+  "v": "9420000",
+  "dir": "Paul Feig",
+  "wri": "Greg Daniels & Mindy Kaling"
+ },
+ {
+  "title": "Niagara: Part 2",
+  "s": 6,
+  "e": 5,
+  "r": 9.5,
+  "date": "Oct 08, 2009",
+  "v": "9420000",
+  "dir": "Paul Feig",
+  "wri": "Greg Daniels & Mindy Kaling"
+ },
+ {
+  "title": "Mafia",
+  "s": 6,
+  "e": 6,
+  "r": 7.6,
+  "date": "Oct 15, 2009",
+  "v": "8100000",
+  "dir": "David Rogers",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "The Lover",
+  "s": 6,
+  "e": 7,
+  "r": 8.6,
+  "date": "Oct 22, 2009",
+  "v": "8520000",
+  "dir": "Lee Eisenberg",
+  "wri": "Lee Eisenberg & Gene Stupnitsky"
+ },
+ {
+  "title": "Koi Pond",
+  "s": 6,
+  "e": 8,
+  "r": 8.1,
+  "date": "Oct 29, 2009",
+  "v": "8200000",
+  "dir": "Reggie Hudlin",
+  "wri": "Warren Lieberstein & Halsted Sullivan"
+ },
+ {
+  "title": "Double Date",
+  "s": 6,
+  "e": 9,
+  "r": 8.1,
+  "date": "Nov 05, 2009",
+  "v": "7940000",
+  "dir": "Seth Gordon",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Murder",
+  "s": 6,
+  "e": 10,
+  "r": 8.7,
+  "date": "Nov 12, 2009",
+  "v": "7760000",
+  "dir": "Greg Daniels",
+  "wri": "Daniel Chun"
+ },
+ {
+  "title": "Shareholder Meeting",
+  "s": 6,
+  "e": 11,
+  "r": 8.2,
+  "date": "Nov 19, 2009",
+  "v": "7430000",
+  "dir": "Charles McDougall",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Scott's Tots",
+  "s": 6,
+  "e": 12,
+  "r": 8.3,
+  "date": "Dec 03, 2009",
+  "v": "8100000",
+  "dir": "B. J. Novak",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "Secret Santa",
+  "s": 6,
+  "e": 13,
+  "r": 8.5,
+  "date": "Dec 10, 2009",
+  "v": "8510000",
+  "dir": "Randall Einhorn",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "The Banker",
+  "s": 6,
+  "e": 14,
+  "r": 6.8,
+  "date": "Jan 21, 2010",
+  "v": "7290000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Jason Kessler"
+ },
+ {
+  "title": "Sabre",
+  "s": 6,
+  "e": 15,
+  "r": 7.6,
+  "date": "Feb 04, 2010",
+  "v": "7360000",
+  "dir": "John Krasinski",
+  "wri": "Jennifer Celotta"
+ },
+ {
+  "title": "Manager and Salesman",
+  "s": 6,
+  "e": 16,
+  "r": 8.0,
+  "date": "Feb 11, 2010",
+  "v": "7400000",
+  "dir": "Marc Webb",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "The Delivery: Part 1",
+  "s": 6,
+  "e": 17,
+  "r": 8.4,
+  "date": "Mar 04, 2010",
+  "v": "9e+06",
+  "dir": "Seth Gordon",
+  "wri": "Daniel Chun"
+ },
+ {
+  "title": "The Delivery: Part 2",
+  "s": 6,
+  "e": 18,
+  "r": 8.5,
+  "date": "Mar 04, 2010",
+  "v": "9e+06",
+  "dir": "Harold Ramis",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "St. Patrick's Day",
+  "s": 6,
+  "e": 19,
+  "r": 7.6,
+  "date": "Mar 11, 2010",
+  "v": "7510000",
+  "dir": "Randall Einhorn",
+  "wri": "Jonathan Hughes"
+ },
+ {
+  "title": "New Leads",
+  "s": 6,
+  "e": 20,
+  "r": 7.7,
+  "date": "Mar 18, 2010",
+  "v": "7630000",
+  "dir": "Brent Forrester",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "Happy Hour",
+  "s": 6,
+  "e": 21,
+  "r": 8.6,
+  "date": "Mar 25, 2010",
+  "v": "7170000",
+  "dir": "Matt Sohn",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Secretary's Day",
+  "s": 6,
+  "e": 22,
+  "r": 7.8,
+  "date": "Apr 22, 2010",
+  "v": "6300000",
+  "dir": "Steve Carell",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Body Language",
+  "s": 6,
+  "e": 23,
+  "r": 7.9,
+  "date": "Apr 29, 2010",
+  "v": "7010000",
+  "dir": "Mindy Kaling",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "The Cover-Up",
+  "s": 6,
+  "e": 24,
+  "r": 8.1,
+  "date": "May 06, 2010",
+  "v": "6840000",
+  "dir": "Rainn Wilson",
+  "wri": "Gene Stupnitsky & Lee Eisenberg"
+ },
+ {
+  "title": "The Chump",
+  "s": 6,
+  "e": 25,
+  "r": 7.7,
+  "date": "May 13, 2010",
+  "v": "6600000",
+  "dir": "Randall Einhorn",
+  "wri": "Aaron Shure"
+ },
+ {
+  "title": "Whistleblower",
+  "s": 6,
+  "e": 26,
+  "r": 8.0,
+  "date": "May 20, 2010",
+  "v": "6600000",
+  "dir": "Paul Lieberstein",
+  "wri": "Warren Lieberstein & Halsted Sullivan"
+ },
+ {
+  "title": "Nepotism",
+  "s": 7,
+  "e": 1,
+  "r": 8.3,
+  "date": "Sep 23, 2010",
+  "v": "8400000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Daniel Chun"
+ },
+ {
+  "title": "Counseling",
+  "s": 7,
+  "e": 2,
+  "r": 8.2,
+  "date": "Sep 30, 2010",
+  "v": "7360000",
+  "dir": "Jeffrey Blitz",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Andy's Play",
+  "s": 7,
+  "e": 3,
+  "r": 8.2,
+  "date": "Oct 07, 2010",
+  "v": "6950000",
+  "dir": "John Stuart Scott",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Sex Ed",
+  "s": 7,
+  "e": 4,
+  "r": 7.8,
+  "date": "Oct 14, 2010",
+  "v": "7360000",
+  "dir": "Paul Lieberstein",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "The Sting",
+  "s": 7,
+  "e": 5,
+  "r": 7.7,
+  "date": "Oct 21, 2010",
+  "v": "6870000",
+  "dir": "Randall Einhorn",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Costume Contest",
+  "s": 7,
+  "e": 6,
+  "r": 8.2,
+  "date": "Oct 28, 2010",
+  "v": "8070000",
+  "dir": "Dean Holland",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Christening",
+  "s": 7,
+  "e": 7,
+  "r": 7.4,
+  "date": "Nov 04, 2010",
+  "v": "7650000",
+  "dir": "Alex Hardcastle",
+  "wri": "Peter Ocko"
+ },
+ {
+  "title": "Viewing Party",
+  "s": 7,
+  "e": 8,
+  "r": 7.8,
+  "date": "Nov 11, 2010",
+  "v": "7150000",
+  "dir": "Ken Whittingham",
+  "wri": "Jon Vitti"
+ },
+ {
+  "title": "WUPHF.com",
+  "s": 7,
+  "e": 9,
+  "r": 7.7,
+  "date": "Nov 18, 2010",
+  "v": "7280000",
+  "dir": "Danny Leiner",
+  "wri": "Aaron Shure"
+ },
+ {
+  "title": "China",
+  "s": 7,
+  "e": 10,
+  "r": 8.2,
+  "date": "Dec 02, 2010",
+  "v": "7310000",
+  "dir": "Charles McDougall",
+  "wri": "Halsted Sullivan & Warren Lieberstein"
+ },
+ {
+  "title": "Classy Christmas",
+  "s": 7,
+  "e": 11,
+  "r": 9.0,
+  "date": "Dec 09, 2010",
+  "v": "7180000",
+  "dir": "Rainn Wilson",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Classy Christmas",
+  "s": 7,
+  "e": 11,
+  "r": 9.0,
+  "date": "Dec 09, 2010",
+  "v": "7180000",
+  "dir": "Rainn Wilson",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Ultimatum",
+  "s": 7,
+  "e": 12,
+  "r": 8.3,
+  "date": "Jan 20, 2011",
+  "v": "8260000",
+  "dir": "David Rogers",
+  "wri": "Carrie Kemper"
+ },
+ {
+  "title": "The Seminar",
+  "s": 7,
+  "e": 13,
+  "r": 7.6,
+  "date": "Jan 27, 2011",
+  "v": "7930000",
+  "dir": "B. J. Novak",
+  "wri": "Steve Hely"
+ },
+ {
+  "title": "The Search",
+  "s": 7,
+  "e": 14,
+  "r": 8.5,
+  "date": "Feb 03, 2011",
+  "v": "7290000",
+  "dir": "Michael Spiller",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "PDA",
+  "s": 7,
+  "e": 15,
+  "r": 8.4,
+  "date": "Feb 10, 2011",
+  "v": "6900000",
+  "dir": "Greg Daniels",
+  "wri": "Robert Padnick"
+ },
+ {
+  "title": "Threat Level Midnight",
+  "s": 7,
+  "e": 16,
+  "r": 9.4,
+  "date": "Feb 17, 2011",
+  "v": "6410000",
+  "dir": "Tucker Gates",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "Todd Packer",
+  "s": 7,
+  "e": 17,
+  "r": 7.4,
+  "date": "Feb 24, 2011",
+  "v": "6120000",
+  "dir": "Randall Einhorn",
+  "wri": "Amelie Gillette"
+ },
+ {
+  "title": "Garage Sale",
+  "s": 7,
+  "e": 18,
+  "r": 9.4,
+  "date": "Mar 24, 2011",
+  "v": "7070000",
+  "dir": "Steve Carell",
+  "wri": "Jon Vitti"
+ },
+ {
+  "title": "Training Day",
+  "s": 7,
+  "e": 19,
+  "r": 7.7,
+  "date": "Apr 14, 2011",
+  "v": "7870000",
+  "dir": "Paul Lieberstein",
+  "wri": "Daniel Chun"
+ },
+ {
+  "title": "Michael's Last Dundies",
+  "s": 7,
+  "e": 20,
+  "r": 9.0,
+  "date": "Apr 21, 2011",
+  "v": "6850000",
+  "dir": "Mindy Kaling",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Goodbye, Michael",
+  "s": 7,
+  "e": 21,
+  "r": 9.8,
+  "date": "Apr 28, 2011",
+  "v": "8420000",
+  "dir": "Paul Feig",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "The Inner Circle",
+  "s": 7,
+  "e": 22,
+  "r": 7.5,
+  "date": "May 05, 2011",
+  "v": "6900000",
+  "dir": "Matt Sohn",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Dwight K. Schrute, (Acting) Manager",
+  "s": 7,
+  "e": 23,
+  "r": 8.7,
+  "date": "May 12, 2011",
+  "v": "6450000",
+  "dir": "Troy Miller",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Search Committee",
+  "s": 7,
+  "e": 24,
+  "r": 8.7,
+  "date": "May 19, 2011",
+  "v": "7290000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Search Committee",
+  "s": 7,
+  "e": 24,
+  "r": 8.7,
+  "date": "May 19, 2011",
+  "v": "7290000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "The List",
+  "s": 8,
+  "e": 1,
+  "r": 8.1,
+  "date": "Sep 22, 2011",
+  "v": "7640000",
+  "dir": "B. J. Novak",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "The Incentive",
+  "s": 8,
+  "e": 2,
+  "r": 8.1,
+  "date": "Sep 29, 2011",
+  "v": "6700000",
+  "dir": "Charles McDougall",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Lotto",
+  "s": 8,
+  "e": 3,
+  "r": 7.2,
+  "date": "Oct 06, 2011",
+  "v": "5820000",
+  "dir": "John Krasinski",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Garden Party",
+  "s": 8,
+  "e": 4,
+  "r": 8.1,
+  "date": "Oct 13, 2011",
+  "v": "6080000",
+  "dir": "David Rogers",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Spooked",
+  "s": 8,
+  "e": 5,
+  "r": 7.5,
+  "date": "Oct 27, 2011",
+  "v": "5530000",
+  "dir": "Randall Einhorn",
+  "wri": "Carrie Kemper"
+ },
+ {
+  "title": "Doomsday",
+  "s": 8,
+  "e": 6,
+  "r": 7.6,
+  "date": "Nov 03, 2011",
+  "v": "6150000",
+  "dir": "Troy Miller",
+  "wri": "Daniel Chun"
+ },
+ {
+  "title": "Pam's Replacement",
+  "s": 8,
+  "e": 7,
+  "r": 7.7,
+  "date": "Nov 10, 2011",
+  "v": "5960000",
+  "dir": "Matt Sohn",
+  "wri": "Allison Silverman"
+ },
+ {
+  "title": "Gettysburg",
+  "s": 8,
+  "e": 8,
+  "r": 6.8,
+  "date": "Nov 17, 2011",
+  "v": "5500000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Robert Padnick"
+ },
+ {
+  "title": "Mrs. California",
+  "s": 8,
+  "e": 9,
+  "r": 7.6,
+  "date": "Dec 01, 2011",
+  "v": "5710000",
+  "dir": "Charlie Grandy",
+  "wri": "Dan Greaney"
+ },
+ {
+  "title": "Christmas Wishes",
+  "s": 8,
+  "e": 10,
+  "r": 7.9,
+  "date": "Dec 08, 2011",
+  "v": "5790000",
+  "dir": "Ed Helms",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Trivia",
+  "s": 8,
+  "e": 11,
+  "r": 7.9,
+  "date": "Jan 12, 2012",
+  "v": "5900000",
+  "dir": "B. J. Novak",
+  "wri": "Steve Hely"
+ },
+ {
+  "title": "Pool Party",
+  "s": 8,
+  "e": 12,
+  "r": 8.0,
+  "date": "Jan 19, 2012",
+  "v": "6020000",
+  "dir": "Charles McDougall",
+  "wri": "Owen Ellickson"
+ },
+ {
+  "title": "Jury Duty",
+  "s": 8,
+  "e": 13,
+  "r": 7.4,
+  "date": "Feb 02, 2012",
+  "v": "5310000",
+  "dir": "Eric Appel",
+  "wri": "Aaron Shure"
+ },
+ {
+  "title": "Special Project",
+  "s": 8,
+  "e": 14,
+  "r": 7.6,
+  "date": "Feb 09, 2012",
+  "v": "5190000",
+  "dir": "David Rogers",
+  "wri": "Amelie Gillette"
+ },
+ {
+  "title": "Tallahassee",
+  "s": 8,
+  "e": 15,
+  "r": 7.8,
+  "date": "Feb 16, 2012",
+  "v": "4380000",
+  "dir": "Matt Sohn",
+  "wri": "Daniel Chun"
+ },
+ {
+  "title": "After Hours",
+  "s": 8,
+  "e": 16,
+  "r": 8.1,
+  "date": "Feb 23, 2012",
+  "v": "5020000",
+  "dir": "Brian Baumgartner",
+  "wri": "Halsted Sullivan & Warren Lieberstein"
+ },
+ {
+  "title": "Test the Store",
+  "s": 8,
+  "e": 17,
+  "r": 7.8,
+  "date": "Mar 01, 2012",
+  "v": "4950000",
+  "dir": "Brent Forrester",
+  "wri": "Mindy Kaling"
+ },
+ {
+  "title": "Last Day in Florida",
+  "s": 8,
+  "e": 18,
+  "r": 7.8,
+  "date": "Mar 08, 2012",
+  "v": "4890000",
+  "dir": "Matt Sohn",
+  "wri": "Robert Padnick"
+ },
+ {
+  "title": "Get the Girl",
+  "s": 8,
+  "e": 19,
+  "r": 6.4,
+  "date": "Mar 15, 2012",
+  "v": "4870000",
+  "dir": "Rainn Wilson",
+  "wri": "Charlie Grandy"
+ },
+ {
+  "title": "Welcome Party",
+  "s": 8,
+  "e": 20,
+  "r": 7.0,
+  "date": "Apr 12, 2012",
+  "v": "4390000",
+  "dir": "Ed Helms",
+  "wri": "Steve Hely"
+ },
+ {
+  "title": "Angry Andy",
+  "s": 8,
+  "e": 21,
+  "r": 6.8,
+  "date": "Apr 19, 2012",
+  "v": "4350000",
+  "dir": "Claire Scanlon",
+  "wri": "Justin Spitzer"
+ },
+ {
+  "title": "Fundraiser",
+  "s": 8,
+  "e": 22,
+  "r": 7.0,
+  "date": "Apr 26, 2012",
+  "v": "4170000",
+  "dir": "David Rogers",
+  "wri": "Owen Ellickson"
+ },
+ {
+  "title": "Turf War",
+  "s": 8,
+  "e": 23,
+  "r": 7.6,
+  "date": "May 03, 2012",
+  "v": "4440000",
+  "dir": "Daniel Chun",
+  "wri": "Warren Lieberstein & Halsted Sullivan"
+ },
+ {
+  "title": "Free Family Portrait Studio",
+  "s": 8,
+  "e": 24,
+  "r": 7.7,
+  "date": "May 10, 2012",
+  "v": "4490000",
+  "dir": "B. J. Novak",
+  "wri": "B. J. Novak"
+ },
+ {
+  "title": "New Guys",
+  "s": 9,
+  "e": 1,
+  "r": 7.5,
+  "date": "Sep 20, 2012",
+  "v": "4280000",
+  "dir": "Greg Daniels",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "Roy's Wedding",
+  "s": 9,
+  "e": 2,
+  "r": 7.1,
+  "date": "Sep 27, 2012",
+  "v": "4130000",
+  "dir": "Matt Sohn",
+  "wri": "Allison Silverman"
+ },
+ {
+  "title": "Andy's Ancestry",
+  "s": 9,
+  "e": 3,
+  "r": 7.3,
+  "date": "Oct 04, 2012",
+  "v": "4140000",
+  "dir": "David Rogers",
+  "wri": "Jonathan Green & Gabe Miller"
+ },
+ {
+  "title": "Work Bus",
+  "s": 9,
+  "e": 4,
+  "r": 7.8,
+  "date": "Oct 18, 2012",
+  "v": "4280000",
+  "dir": "Bryan Cranston",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "Here Comes Treble",
+  "s": 9,
+  "e": 5,
+  "r": 6.9,
+  "date": "Oct 25, 2012",
+  "v": "4e+06",
+  "dir": "Claire Scanlon",
+  "wri": "Owen Ellickson"
+ },
+ {
+  "title": "The Boat",
+  "s": 9,
+  "e": 6,
+  "r": 7.7,
+  "date": "Nov 08, 2012",
+  "v": "4830000",
+  "dir": "John Krasinski",
+  "wri": "Dan Sterling"
+ },
+ {
+  "title": "The Whale",
+  "s": 9,
+  "e": 7,
+  "r": 7.6,
+  "date": "Nov 15, 2012",
+  "v": "4160000",
+  "dir": "Rodman Flender",
+  "wri": "Carrie Kemper"
+ },
+ {
+  "title": "The Target",
+  "s": 9,
+  "e": 8,
+  "r": 7.8,
+  "date": "Nov 29, 2012",
+  "v": "3880000",
+  "dir": "Brent Forrester",
+  "wri": "Graham Wagner"
+ },
+ {
+  "title": "Dwight Christmas",
+  "s": 9,
+  "e": 9,
+  "r": 8.4,
+  "date": "Dec 06, 2012",
+  "v": "4160000",
+  "dir": "Charles McDougall",
+  "wri": "Robert Padnick"
+ },
+ {
+  "title": "Lice",
+  "s": 9,
+  "e": 10,
+  "r": 7.6,
+  "date": "Jan 10, 2013",
+  "v": "4540000",
+  "dir": "Rodman Flender",
+  "wri": "Niki Schwartz-Wright"
+ },
+ {
+  "title": "Suit Warehouse",
+  "s": 9,
+  "e": 11,
+  "r": 7.8,
+  "date": "Jan 17, 2013",
+  "v": "4150000",
+  "dir": "Matt Sohn",
+  "wri": "Dan Greaney"
+ },
+ {
+  "title": "Customer Loyalty",
+  "s": 9,
+  "e": 12,
+  "r": 7.9,
+  "date": "Jan 24, 2013",
+  "v": "4190000",
+  "dir": "Kelly Cantley",
+  "wri": "Jonathan Green & Gabe Miller"
+ },
+ {
+  "title": "Junior Salesman",
+  "s": 9,
+  "e": 13,
+  "r": 7.5,
+  "date": "Jan 31, 2013",
+  "v": "4450000",
+  "dir": "David Rogers",
+  "wri": "Carrie Kemper"
+ },
+ {
+  "title": "Vandalism",
+  "s": 9,
+  "e": 14,
+  "r": 7.4,
+  "date": "Jan 31, 2013",
+  "v": "3970000",
+  "dir": "Lee Kirk",
+  "wri": "Owen Ellickson"
+ },
+ {
+  "title": "Couples Discount",
+  "s": 9,
+  "e": 15,
+  "r": 7.2,
+  "date": "Feb 07, 2013",
+  "v": "4150000",
+  "dir": "Troy Miller",
+  "wri": "Allison Silverman"
+ },
+ {
+  "title": "Moving On",
+  "s": 9,
+  "e": 16,
+  "r": 8.0,
+  "date": "Feb 14, 2013",
+  "v": "4060000",
+  "dir": "Jon Favreau",
+  "wri": "Graham Wagner"
+ },
+ {
+  "title": "The Farm",
+  "s": 9,
+  "e": 17,
+  "r": 7.5,
+  "date": "Mar 14, 2013",
+  "v": "3540000",
+  "dir": "Paul Lieberstein",
+  "wri": "Paul Lieberstein"
+ },
+ {
+  "title": "Promos",
+  "s": 9,
+  "e": 18,
+  "r": 8.0,
+  "date": "Apr 04, 2013",
+  "v": "3440000",
+  "dir": "Jennifer Celotta",
+  "wri": "Tim McAuliffe"
+ },
+ {
+  "title": "Stairmageddon",
+  "s": 9,
+  "e": 19,
+  "r": 8.0,
+  "date": "Apr 11, 2013",
+  "v": "3830000",
+  "dir": "Matt Sohn",
+  "wri": "Dan Sterling"
+ },
+ {
+  "title": "Paper Airplane",
+  "s": 9,
+  "e": 20,
+  "r": 8.0,
+  "date": "Apr 25, 2013",
+  "v": "3250000",
+  "dir": "Jesse Peretz",
+  "wri": "Halsted Sullivan & Warren Lieberstein"
+ },
+ {
+  "title": "Livin' the Dream",
+  "s": 9,
+  "e": 21,
+  "r": 9.1,
+  "date": "May 02, 2013",
+  "v": "3510000",
+  "dir": "Jeffrey Blitz",
+  "wri": "Niki Schwartz-Wright"
+ },
+ {
+  "title": "A.A.R.M.",
+  "s": 9,
+  "e": 22,
+  "r": 9.5,
+  "date": "May 09, 2013",
+  "v": "4560000",
+  "dir": "David Rogers",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "A.A.R.M.",
+  "s": 9,
+  "e": 22,
+  "r": 9.5,
+  "date": "May 09, 2013",
+  "v": "4560000",
+  "dir": "David Rogers",
+  "wri": "Brent Forrester"
+ },
+ {
+  "title": "Finale",
+  "s": 9,
+  "e": 23,
+  "r": 9.8,
+  "date": "May 16, 2013",
+  "v": "5690000",
+  "dir": "Ken Kwapis",
+  "wri": "Greg Daniels"
+ },
+ {
+  "title": "Finale",
+  "s": 9,
+  "e": 23,
+  "r": 9.8,
+  "date": "May 16, 2013",
+  "v": "5690000",
+  "dir": "Ken Kwapis",
+  "wri": "Greg Daniels"
+ }
+]
