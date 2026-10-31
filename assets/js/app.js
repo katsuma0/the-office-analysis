@@ -186,22 +186,22 @@ $('#theme').addEventListener('click', () => {
 });
 
 const sheet = $('#sheet');
+const sheetBack = $('#sheet-back');
 const menu = $('#menu');
-function closeSheet() { sheet.hidden = true; menu.setAttribute('aria-expanded', 'false'); unlock(); }
+function closeSheet() { sheet.hidden = true; sheetBack.hidden = true; menu.setAttribute('aria-expanded', 'false'); unlock(); }
 menu.addEventListener('click', () => {
   const open = sheet.hidden;
   sheet.hidden = !open;
+  sheetBack.hidden = !open;
   menu.setAttribute('aria-expanded', String(open));
   if (open) lock(); else unlock();
 });
-sheet.addEventListener('click', (e) => { if (e.target.closest('a')) closeSheet(); });
-// The menu drops down over the top three quarters of the page; a tap on the rest closes it and does nothing else.
-document.addEventListener('click', (e) => {
-  if (sheet.hidden || sheet.contains(e.target) || menu.contains(e.target)) return;
-  e.preventDefault();
-  e.stopPropagation();
-  closeSheet();
-}, true);
+// Any tap that isn't on a menu link closes the menu: the dimmed page below it, the blank part of the menu itself,
+// or the empty header. iPhone Safari only reports taps on elements that listen for them, so the backdrop is a
+// real element with its own listener rather than a catch-all on the document.
+sheet.addEventListener('click', closeSheet);
+sheetBack.addEventListener('click', closeSheet);
+$('.top').addEventListener('click', (e) => { if (!sheet.hidden && !e.target.closest('a, button')) closeSheet(); });
 addEventListener('resize', () => { if (!sheet.hidden && innerWidth > 900) closeSheet(); });
 
 let locks = 0;
@@ -267,6 +267,7 @@ function select(k) {
 }
 function openPal() {
   if (!pal.hidden) return;
+  if (!sheet.hidden) closeSheet();
   opener = document.activeElement;
   pal.hidden = false;
   q.value = '';
