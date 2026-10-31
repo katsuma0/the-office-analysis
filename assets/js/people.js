@@ -332,6 +332,16 @@ function corrText(D, c) {
 
 // One sentence about who says this character's name, picked from whichever fact is most surprising.
 // Returns the sentence and whether it already used the self-naming count, so the note under the bars doesn't repeat it.
+// Dundies won and couples, as links to those pages.
+function ribbons(D, c) {
+  const won = (D.dundies || []).filter((d) => d.k === c.key);
+  const pairs = (D.couples || []).filter((p) => p.a === c.key || p.b === c.key);
+  if (!won.length && !pairs.length) return '';
+  const dun = won.map((d) => `<a class="ribbon gold" href="#/dundies@${d.id}">${esc(d.award)}</a>`).join('');
+  const cps = pairs.map((p) => `<a class="ribbon" href="#/couples@${slug(`${p.a}-${p.b}`)}">${esc(p.a === c.key ? p.b : p.a)}</a>`).join('');
+  return `<div class="ribbons">${won.length ? `<span class="rb-h">${won.length > 1 ? 'Dundies' : 'Dundie'}</span>${dun}` : ''}${pairs.length ? `<span class="rb-h">Couples Discount</span>${cps}` : ''}</div>`;
+}
+
 function namePunch(D, c) {
   const nb = c.namedBy || [];
   if (!nb.length) return { t: '', self: false };
@@ -560,6 +570,7 @@ export function character(D, key, lines) {
           <h1 style="font-size:clamp(42px,7vw,88px)">${esc(c.name)}</h1>
           <p class="lede">${esc(c.blurb)}</p>
           <p class="actor">Played by ${esc(c.actor)}. In ${fmt.plural(c.episodes, 'episode')}, ${first.id === last.id ? `only ${esc(first.t)}` : `from ${esc(first.t)} to ${esc(last.t)}`}.</p>
+          ${ribbons(D, c)}
         </div>
       </div>
       <div class="fl" style="--cc:${cc}">${firstCard}${lastCard}</div>
