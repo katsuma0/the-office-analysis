@@ -628,3 +628,7 @@ details.tv .table-wrap { margin-top: 10px; max-height: 360px; overflow: auto; }
 }
 :root[data-theme="dark"] .chart text.cell-n { fill: #0e1a33; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chart text.cell-n { fill: #0e1a33; } }
+
+.nav a.nav-play { color: var(--note-ink); background: var(--note); margin-left: 6px; }
+.nav a.nav-play:hover, .nav a.nav-play.on { background: var(--note); color: var(--note-ink); box-shadow: var(--shadow); }
+.foot-inner { flex-direction: column; }

@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
   <meta property="og:title" content="The Office, by the numbers">
-  <meta property="og:description" content="188 episodes, 54,756 lines of dialogue, 55 directors. I counted all of it.">
+  <meta property="og:description" content="188 episodes, 54,756 lines of dialogue, 55 directors. I counted all of it. Then I made a quiz.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://katsuma.ca/the-office-analysis/">
   <meta property="og:image" content="https://katsuma.ca/the-office-analysis/assets/og.png">
@@ -17,9 +17,22 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..600&family=Inter:wght@400..800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,400&family=Inter:wght@400..700&display=swap">
   <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="preload" href="data/office.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="assets/css/parts/pages.css">
+  <link rel="stylesheet" href="assets/css/parts/people.css">
+  <link rel="stylesheet" href="assets/css/parts/talk.css">
+  <link rel="stylesheet" href="assets/css/parts/quiz.css">
+  <link rel="stylesheet" href="assets/css/parts/fun.css">
+  <link rel="modulepreload" href="assets/js/app.js">
+  <link rel="modulepreload" href="assets/js/ui.js">
+  <link rel="modulepreload" href="assets/js/charts.js">
+  <link rel="modulepreload" href="assets/js/pages.js">
+  <link rel="modulepreload" href="assets/js/people.js">
+  <link rel="modulepreload" href="assets/js/talk.js">
+  <link rel="modulepreload" href="assets/js/quiz.js">
+  <link rel="modulepreload" href="assets/js/fun.js">
+  <link rel="preload" href="data/office.json" as="fetch" crossorigin="anonymous">
   <script>
     // Set the theme before first paint so dark mode doesn't flash white.
     try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
@@ -38,9 +51,10 @@
       <nav class="nav" aria-label="Main">
         <a href="#/seasons" data-nav="season">Seasons</a>
         <a href="#/characters" data-nav="character">Characters</a>
-        <a href="#/crew" data-nav="crew">Directors &amp; writers</a>
+        <a href="#/crew" data-nav="crew">Crew</a>
         <a href="#/dialogue" data-nav="dialogue">Dialogue</a>
         <a href="#/findings" data-nav="findings">Findings</a>
+        <a href="#/quiz" data-nav="quiz" class="nav-play">Play</a>
       </nav>
       <div class="top-actions">
         <button class="icon-btn" id="open-search" aria-label="Jump to anything" title="Jump to anything (/)">
@@ -62,10 +76,14 @@
     <nav aria-label="Main, mobile">
       <a href="#/">Home</a>
       <a href="#/seasons">Seasons</a>
+      <a href="#/episodes">Every episode, ranked</a>
       <a href="#/characters">Characters</a>
       <a href="#/crew">Directors &amp; writers</a>
       <a href="#/dialogue">Dialogue</a>
       <a href="#/findings">Findings</a>
+      <a href="#/quiz">Who Said It?</a>
+      <a href="#/dundies">The Dundies</a>
+      <a href="#/couples">Couples Discount</a>
       <a href="#/about">How I made this</a>
     </nav>
   </div>
@@ -80,6 +98,7 @@
   <footer class="foot">
     <div class="foot-inner">
       <p>Made by <a href="https://katsuma.ca">Katsuma Onishi</a> in Markham, Ontario. A fan project, not affiliated with NBC or Deedle-Dee Productions.</p>
+      <p><a href="#/quiz">Who Said It?</a> · <a href="#/dundies">The Dundies</a> · <a href="#/couples">Couples Discount</a> · <a href="#/episodes">All 188, ranked</a></p>
       <p><a href="#/about">How I made this</a> · <a href="original/2023-report.html">The 2023 R version</a> · <a href="https://github.com/katsuma0/the-office-analysis">Source</a></p>
     </div>
   </footer>
@@ -90,7 +109,7 @@
     <div class="palette-box" role="dialog" aria-modal="true" aria-label="Jump to">
       <div class="palette-input">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
-        <input id="palette-q" type="search" placeholder="Episode, character, season, director…" autocomplete="off" spellcheck="false">
+        <input id="palette-q" type="search" placeholder="Episode, character, season, director…" autocomplete="off" spellcheck="false" aria-label="Jump to an episode, character, season or person" role="combobox" aria-controls="palette-list" aria-expanded="true">
         <kbd>esc</kbd>
       </div>
       <ul id="palette-list" role="listbox"></ul>
