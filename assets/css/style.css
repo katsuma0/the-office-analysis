@@ -1778,3 +1778,100 @@ button.tk-line:focus-visible { outline: 2px solid var(--accent); outline-offset:
   .dn-card.rv .dn-top .dn-trophy { opacity: 1; transform: none; }
 }
 .cp-nw { white-space: nowrap; }
+
+/* ================================================================ endless quiz */
+
+.eq-h { font: 500 clamp(24px, 3vw, 32px)/1.15 var(--serif); letter-spacing: -.02em; margin: 0 0 6px; }
+.eq-top-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: stretch; }
+@media (max-width: 800px) { .eq-top-grid { grid-template-columns: 1fr; } }
+
+/* title and the meter to the next one */
+.eq-rank-card { padding: 22px 24px; }
+.eq-rank-t { font: 500 clamp(28px, 4vw, 40px)/1.08 var(--serif); letter-spacing: -.025em; margin: 0; text-wrap: balance; }
+.eq-rank.sm .eq-rank-t { font-size: 22px; }
+.eq-rank-l { margin: 8px 0 0; color: var(--ink-2); font-size: 15px; }
+.eq-meter { height: 10px; border-radius: 999px; background: var(--bg-2); margin: 16px 0 10px; overflow: hidden; }
+.eq-rank.sm .eq-meter { height: 8px; margin: 12px 0 8px; }
+.eq-meter span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .8s var(--ease); }
+.eq-rank-n { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin: 0; font-size: 13.5px; color: var(--ink-3); }
+.eq-rank-n b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.eq-daily { display: flex; flex-direction: column; gap: 4px; padding: 22px 24px; text-decoration: none; color: inherit; background: var(--note); color: var(--note-ink); border-color: transparent; transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+.eq-daily .qz-kicker, .eq-daily .card-sub { color: inherit; opacity: .8; }
+.eq-daily .card-title { color: inherit; }
+.eq-daily .link-arrow { margin-top: auto; padding-top: 12px; color: inherit; font-weight: 650; }
+@media (hover: hover) { .eq-daily:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); } }
+
+/* difficulty */
+.eq-pick-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 24px; margin-bottom: 18px; }
+.eq-levels { display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--bg-2); }
+.eq-top .eq-levels { margin-top: 20px; }
+.eq-level { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 48px; padding: 6px 16px; border: 0; border-radius: 12px; background: transparent; color: var(--ink-2); font: inherit; text-decoration: none; cursor: pointer; transition: background .2s var(--ease), color .2s var(--ease); }
+.eq-level b { font-size: 15px; font-weight: 650; }
+.eq-level small { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.eq-level.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.eq-level:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 520px) { .eq-levels { display: grid; width: 100%; } .eq-level { padding: 6px 8px; } }
+
+/* the games */
+.eq-g { font: 650 12px/1.4 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin: 28px 0 10px; }
+.eq-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.eq-game { position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 140px; padding: 18px 46px 16px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: inherit; text-decoration: none; box-shadow: var(--shadow); transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.eq-game.big { min-height: 0; padding: 22px 56px 20px 22px; background: var(--accent); border-color: transparent; color: #fff; }
+.eq-game-t { font: 500 21px/1.15 var(--serif); letter-spacing: -.015em; }
+.eq-game.big .eq-game-t { font-size: 28px; }
+.eq-game-b { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.eq-game-s { margin-top: auto; padding-top: 6px; font-size: 12.5px; color: var(--ink-3); }
+.eq-game-s b { color: var(--ink); font-weight: 650; }
+.eq-game.big .eq-game-b, .eq-game.big .eq-game-s, .eq-game.big .eq-game-s b { color: rgb(255 255 255 / 88%); }
+.eq-go { position: absolute; right: 16px; top: 18px; width: 22px; height: 22px; color: var(--ink-3); transition: transform .2s var(--ease), color .2s var(--ease); }
+.eq-game.big .eq-go { color: #fff; top: 24px; right: 22px; }
+.eq-go svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) {
+  .eq-game:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--shadow-lg); }
+  .eq-game:hover .eq-go { transform: translateX(3px); color: var(--accent); }
+  .eq-game.big:hover .eq-go { color: #fff; }
+}
+.eq-game:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* the ledger */
+.eq-ledger td small { display: block; font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.eq-ledger td b { font-variant-numeric: tabular-nums; }
+.eq-ledger tfoot td { font-weight: 650; border-top: 1px solid var(--line-2); }
+.eq-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.eq-chips .chip { min-height: 36px; padding: 6px 14px; text-decoration: none; color: var(--ink); font-size: 14px; }
+.eq-chips .chip:hover { background: var(--accent-soft); }
+
+/* play */
+.eq-worth { font: 650 12.5px/1 var(--sans); padding: 6px 10px; border-radius: 999px; background: var(--bg-2); color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.eq-worth:empty { display: none; }
+.eq-worth.double { background: var(--note); color: var(--note-ink); }
+.eq-worth.won { background: var(--good); color: #fff; animation: eq-pop .5s var(--spring); }
+.eq-worth.lost { background: var(--bg-2); color: var(--ink-3); }
+.eq-toast { margin: 14px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--note); color: var(--note-ink); font-size: 13.5px; line-height: 1.45; animation: eq-pop .5s var(--spring); }
+.eq-q { margin: 0; font: 500 clamp(22px, 2.6vw, 28px)/1.25 var(--serif); letter-spacing: -.015em; text-wrap: pretty; }
+.eq-gap { display: inline-block; min-width: 3ch; border-bottom: 2px solid var(--accent); color: var(--accent); }
+.eq-full { margin: 0 0 10px; font: 400 17px/1.5 var(--mono); }
+.eq-full mark { background: var(--note); color: var(--note-ink); border-radius: 3px; padding: 0 2px; }
+.eq-script { margin: 0; font-size: 15px; }
+.eq-cite { margin: 12px 0 0; padding: 4px 14px; border-radius: 12px; background: var(--bg-2); font-size: 14px; }
+.eq-why { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink); }
+.eq-plays { display: block; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.eq-list { list-style: none; margin: 0; padding: 0; counter-reset: eq; }
+.eq-list li { counter-increment: eq; display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline; padding: 9px 0; border-top: 1px dashed var(--line); font-size: 15px; }
+.eq-list li:first-child { border-top: 0; }
+.eq-list li::before { content: counter(eq); font: 650 12px var(--sans); color: var(--ink-3); }
+.eq-list li span { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.eq-list li.on a { font-weight: 650; }
+.eq-list li.on::before { color: var(--good); }
+@media (max-width: 520px) { .eq-list li { grid-template-columns: 22px minmax(0, 1fr); } .eq-list li span { grid-column: 2; } }
+.eq-card .hbars { margin-top: 8px; }
+@keyframes eq-pop { from { transform: scale(.85); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .eq-worth.won, .eq-toast { animation: none; } }
+/* The dark theme's accent is a light blue, so the big card's text goes dark to stay readable. */
+:root[data-theme="dark"] .eq-game.big, :root[data-theme="dark"] .eq-game.big .eq-go { color: #0e1a33; }
+:root[data-theme="dark"] .eq-game.big .eq-game-b, :root[data-theme="dark"] .eq-game.big .eq-game-s, :root[data-theme="dark"] .eq-game.big .eq-game-s b { color: rgb(14 26 51 / 85%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .eq-game.big, :root:not([data-theme="light"]) .eq-game.big .eq-go { color: #0e1a33; }
+  :root:not([data-theme="light"]) .eq-game.big .eq-game-b, :root:not([data-theme="light"]) .eq-game.big .eq-game-s, :root:not([data-theme="light"]) .eq-game.big .eq-game-s b { color: rgb(14 26 51 / 85%); }
+}

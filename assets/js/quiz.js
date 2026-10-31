@@ -1,4 +1,4 @@
-// #/quiz: Who Said It? (a daily five-line quiz) and Name That Episode (ten rounds, five words each).
+// #/quiz/daily: Who Said It? (a daily five-line quiz) and Name That Episode (ten rounds, five words each).
 // The daily set comes from seeded shuffles, so everyone gets the same five lines with no server involved.
 
 import { $, $$, esc, fmt, slug, color, epCode, hbars, arrow } from './ui.js';
@@ -40,7 +40,7 @@ const spell = (n) => SMALL[n] ?? fmt.int(n);
 const RIGHT = ['Right.', 'Correct.', 'That’s the one.', 'Yep.', 'Nailed it.'];
 const WRONG = ['Nope.', 'Not quite.', 'Not this time.'];
 
-const ICON = {
+export const ICON = {
   yes: '<svg class="qz-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.6 6.4 11.6 12.8 4.6"/></svg>',
   no: '<svg class="qz-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg>',
   share: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10V2M5 5l3-3 3 3M3 8.5V14h10V8.5"/></svg>',
@@ -275,7 +275,7 @@ function scrollNear(el) {
 
 // cfg.picked re-opens a round that was already answered (Back from an episode link), quietly: no animations,
 // no announcement, no scrolling, and onAnswer is told it's a repeat so nothing is counted twice.
-function round(host, cfg, live) {
+export function round(host, cfg, live) {
   const again = cfg.picked != null && cfg.picked >= 0;
   host.innerHTML = `<div class="qz-card${cfg.cls ? ` ${cfg.cls}` : ''}${again ? ' qz-quiet' : ''}" tabindex="-1">
     ${cfg.head}
@@ -478,7 +478,7 @@ function play(D, quizPool, root) {
     const right = s.right.slice(0, DAILY);
     const score = right.filter(Boolean).length;
     const [title, sub] = WSI_TITLES[score];
-    const text = `${shareName(day)} · ${score}/${DAILY}\n${shareText(right)}\n${SITE}#/quiz`;
+    const text = `${shareName(day)} · ${score}/${DAILY}\n${shareText(right)}\n${SITE}#/quiz/daily`;
     const pr = state.practice;
     whoMain.innerHTML = `<div class="qz-card qz-res" tabindex="-1">
       <div class="qz-res-top">
@@ -686,7 +686,7 @@ function play(D, quizPool, root) {
     const right = g.picks.map((p) => p.right);
     const score = right.filter(Boolean).length;
     const [, title, sub] = NTE_TITLES.find(([min]) => score >= min);
-    const text = `Name That Episode · ${score}/${ROUNDS}\n${shareText(right)}\n${SITE}#/quiz@name-that-episode`;
+    const text = `Name That Episode · ${score}/${ROUNDS}\n${shareText(right)}\n${SITE}#/quiz/daily@name-that-episode`;
     nteMain.innerHTML = `<div class="qz-card qz-res qz-nte-res" tabindex="-1">
       <div class="qz-res-top">
         <div class="qz-trophy">${dundie}</div>
@@ -778,7 +778,7 @@ function play(D, quizPool, root) {
     document.title = document.title.replace(/^(Who Said It\?|Name That Episode)(?= · )/, TITLE[name]);
     if (name === 'nte' && !nteStarted) { nteStarted = true; showNte(); }
     if (url) {
-      const want = name === 'nte' ? '#/quiz@name-that-episode' : '#/quiz';
+      const want = name === 'nte' ? '#/quiz/daily@name-that-episode' : '#/quiz/daily';
       if (location.hash !== want) history.replaceState(history.state, '', want);
     }
   }
