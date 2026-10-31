@@ -66,7 +66,6 @@ const routes = [
   [/^\/person\/([\w-]+)$/, (m) => People.person(D, m[1]), 'crew'],
   [/^\/dialogue(?:\/q\/(.+))?$/, (m) => Talk.dialogue(D, lines, m[1]), 'dialogue'],
   [/^\/findings$/, () => Talk.findings(D), 'findings'],
-  [/^\/about$/, () => Talk.about(D), 'about'],
   [/^\/quiz$/, () => Quiz.quiz(D, quizPool), 'quiz'],
   [/^\/dundies$/, () => Fun.dundies(D, lines), 'fun'],
   [/^\/couples$/, () => Fun.couples(D), 'fun'],
@@ -186,6 +185,13 @@ menu.addEventListener('click', () => {
   if (open) lock(); else unlock();
 });
 sheet.addEventListener('click', (e) => { if (e.target.closest('a')) closeSheet(); });
+// The menu drops down over the top three quarters of the page; a tap on the rest closes it and does nothing else.
+document.addEventListener('click', (e) => {
+  if (sheet.hidden || sheet.contains(e.target) || menu.contains(e.target)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  closeSheet();
+}, true);
 addEventListener('resize', () => { if (!sheet.hidden && innerWidth > 900) closeSheet(); });
 
 let locks = 0;
@@ -208,7 +214,7 @@ function index() {
     { t: 'Home', s: 'Page', h: '#/' }, { t: 'Findings', s: 'Page', h: '#/findings' }, { t: 'Dialogue and search', s: 'Page', h: '#/dialogue' },
     { t: 'Directors and writers', s: 'Page', h: '#/crew' }, { t: 'Every episode, ranked', s: 'Page', h: '#/episodes' },
     { t: 'Who Said It? quiz', s: 'Page', h: '#/quiz' }, { t: 'The Dundies', s: 'Page', h: '#/dundies' },
-    { t: 'Couples Discount', s: 'Page', h: '#/couples' }, { t: 'How I made this', s: 'Page', h: '#/about' },
+    { t: 'Couples Discount', s: 'Page', h: '#/couples' },
   ];
   D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
   D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}` }));
