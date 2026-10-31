@@ -2,7 +2,7 @@
 
 Every season, character, director, writer and line of dialogue in The Office (US), counted and charted. It lives at [katsuma.ca/the-office-analysis](https://katsuma.ca/the-office-analysis/).
 
-I first did this in 2023 as my first data project, in R. That version is still in `original/2023-report.html`. This one starts over: 188 episodes, 54,756 lines, nine season pages, 24 character pages, a page for every episode, director and writer, a search box over the whole script, five findings with the stats explained in plain words, a daily Who Said It? quiz, the Dundies, and a page that measures the couples.
+I first did this in 2023 as my first data project, in R. That version is still in `original/2023-report.html`. This one starts over: 188 episodes, 54,756 lines, nine season pages, 24 character pages, a page for every episode, director and writer, a search box over the whole script, five findings with the stats explained in plain words, a daily Who Said It?, an endless quiz with 13 kinds of question, the Dundies, and a page that measures the couples.
 
 It's plain HTML, CSS and JavaScript modules with hand-built SVG charts. No framework, no build step, no tracking. GitHub Pages serves the repo root as is.
 
@@ -24,6 +24,13 @@ pip download schrutepy==0.1.3 --no-deps -d /tmp/schrute
 tar xzf /tmp/schrute/schrutepy-0.1.3.tar.gz -C /tmp/schrute
 cp /tmp/schrute/schrutepy-0.1.3/data/schrute.csv raw/
 python3 scripts/build_data.py
+```
+
+The endless quiz reads `data/quizbank.json`, built from the transcript after `build_data.py` runs. Its storyline questions are written by hand in `scripts/trivia.json`, and each one cites the transcript line that proves the answer. `check_quiz.mjs` plays every question type at every level a few hundred times and checks each answer against the data.
+
+```
+python3 scripts/build_quizbank.py
+node scripts/check_quiz.mjs
 ```
 
 `raw/schrute.csv` is 11 MB, so it isn't committed. `raw/episodes_2023.json` came out of the 2023 report with `scripts/extract_2023.py`.

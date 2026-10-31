@@ -4,6 +4,8 @@ import * as People from './people.js';
 import * as Talk from './talk.js';
 import * as Quiz from './quiz.js';
 import * as Fun from './fun.js';
+import * as Endless from './endless.js';
+import { TYPES as QUIZ_TYPES } from './qgen.js';
 
 const app = $('#app');
 let D;
@@ -66,7 +68,9 @@ const routes = [
   [/^\/person\/([\w-]+)$/, (m) => People.person(D, m[1]), 'crew'],
   [/^\/dialogue(?:\/q\/(.+))?$/, (m) => Talk.dialogue(D, lines, m[1]), 'dialogue'],
   [/^\/findings$/, () => Talk.findings(D), 'findings'],
-  [/^\/quiz$/, () => Quiz.quiz(D, quizPool), 'quiz'],
+  [/^\/quiz$/, () => Endless.hub(D), 'quiz'],
+  [/^\/quiz\/daily$/, () => Quiz.quiz(D, quizPool), 'quiz'],
+  [/^\/quiz\/([\w-]+)\/(easy|medium|hard)$/, (m) => Endless.play(D, m[1], m[2]), 'quiz'],
   [/^\/dundies$/, () => Fun.dundies(D, lines), 'fun'],
   [/^\/couples$/, () => Fun.couples(D), 'fun'],
 ];
@@ -213,7 +217,8 @@ function index() {
   const out = [
     { t: 'Home', s: 'Page', h: '#/' }, { t: 'Findings', s: 'Page', h: '#/findings' }, { t: 'Dialogue and search', s: 'Page', h: '#/dialogue' },
     { t: 'Directors and writers', s: 'Page', h: '#/crew' }, { t: 'Every episode, ranked', s: 'Page', h: '#/episodes' },
-    { t: 'Who Said It? quiz', s: 'Page', h: '#/quiz' }, { t: 'The Dundies', s: 'Page', h: '#/dundies' },
+    { t: 'Quiz', s: 'Page', h: '#/quiz' }, { t: 'Who Said It? today', s: 'Daily quiz', h: '#/quiz/daily' },
+    ...QUIZ_TYPES.map((q) => ({ t: q.name, s: 'Quiz', h: `#/quiz/${q.id}/easy` })), { t: 'Mixed Bag', s: 'Quiz', h: '#/quiz/mixed/easy' }, { t: 'The Dundies', s: 'Page', h: '#/dundies' },
     { t: 'Couples Discount', s: 'Page', h: '#/couples' },
   ];
   D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
