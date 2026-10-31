@@ -2,7 +2,7 @@
 
 Every season, character, director, writer and line of dialogue in The Office (US), counted and charted. It lives at [katsuma.ca/the-office-analysis](https://katsuma.ca/the-office-analysis/).
 
-I first did this in 2023 as my first data project, in R. That version is still in `original/2023-report.html`. This one starts over: 188 episodes, 54,756 lines, nine season pages, 24 character pages, a page for every episode, director and writer, a search box over the whole script, five findings with the stats explained in plain words, a daily Who Said It?, an endless quiz with 13 kinds of question, the Dundies, and a page that measures the couples.
+I did the first version in 2023, in R, as my first data project. It's still in `original/2023-report.html`. This one starts over: 188 episodes, 54,756 lines, nine season pages, 24 character pages, a page for every episode, director and writer, a search box over the whole script, five findings with the stats explained in plain words, a daily Who Said It?, an endless quiz with 13 kinds of question, the Dundies, and a page that measures the couples.
 
 It's plain HTML, CSS and JavaScript modules with hand-built SVG charts. No framework, no build step, no tracking. GitHub Pages serves the repo root as is.
 
@@ -37,9 +37,9 @@ node scripts/check_quiz.mjs
 
 ## Corrections
 
-The 2023 version merged its tables on season and title, which put every two-part episode in twice: 201 rows for 188 episodes. Everything here is recomputed with one row per episode. The "that's what she said" result changed the most.
+The 2023 version merged its tables on season and title, which put every hour-long episode in twice: 201 rows for 188 episodes. Everything here is recomputed with one row per episode. The "that's what she said" result changed the most.
 
-The transcript has its own problems, fixed or flagged in `scripts/build_data.py`. It was cut into pages of 244 rows and then sorted by row-within-page, so in 149 episodes everything past row 244 was dealt in between the opening lines, one each. Sorting by page then row puts them back: Performance Review's page one ends on Jim's "Oh-" and page two opens with Pam's "As a human being." Five episodes still have a stretch where two scenes trade lines in the source itself, and anything that depends on line order skips or flags those. About 225 lines had broken characters (`â€”`) and are repaired. Plain "David" in The Seminar is David Brent, not David Wallace, plain "Robert" outside Robert California's run (Search Committee to Free Family Portrait Studio) is Senator Lipton or someone from Weyer-Hammer, and the Pete in Employee Transfer and Niagara is Jim's brother.
+The transcript has its own problems, fixed or flagged in `scripts/build_data.py`. It was cut into pages of 244 rows and then sorted by row-within-page, so in 149 episodes everything past row 244 was dealt in between the opening lines, one each. Sorting by page then row puts them back: Performance Review's page one ends on Jim's "Oh-" and page two opens with Pam's "As a human being." Five episodes still have a stretch where two scenes trade lines in the source itself, and anything that depends on line order skips or flags those. About 225 lines had broken characters (`â€”`) and are repaired, with their dashes written as `--` like the rest of the transcript. Plain "David" in The Seminar is David Brent, not David Wallace. Plain "Robert" outside Robert California's run (Search Committee to Free Family Portrait Studio) is Senator Lipton or someone from Weyer-Hammer. The Pete in Employee Transfer and Niagara is Jim's brother. Name counts skip "boughs of holly", "for Pete's sake" and namesakes like Kevin Costner.
 
 ## Sources
 

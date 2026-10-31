@@ -72,8 +72,8 @@ function rankHtml(L, { compact = false } = {}) {
 const levelPills = (type, level, here = false) => `<div class="eq-levels" role="group" aria-label="Difficulty">${LEVELS.map((l) => {
   const on = l === level;
   return here
-    ? `<a class="eq-level${on ? ' on' : ''}" href="#/quiz/${type}/${l}"${on ? ' aria-current="page"' : ''}><b>${LEVEL_NAME[l]}</b><small>${POINTS[l]} a right answer</small></a>`
-    : `<button type="button" class="eq-level${on ? ' on' : ''}" data-level="${l}" aria-pressed="${on}"><b>${LEVEL_NAME[l]}</b><small>${POINTS[l]} a right answer</small></button>`;
+    ? `<a class="eq-level${on ? ' on' : ''}" href="#/quiz/${type}/${l}"${on ? ' aria-current="page"' : ''}><b>${LEVEL_NAME[l]}</b><small>${POINTS[l]} ${POINTS[l] === 1 ? 'buck' : 'bucks'} each</small></a>`
+    : `<button type="button" class="eq-level${on ? ' on' : ''}" data-level="${l}" aria-pressed="${on}"><b>${LEVEL_NAME[l]}</b><small>${POINTS[l]} ${POINTS[l] === 1 ? 'buck' : 'bucks'} each</small></button>`;
 }).join('')}</div>`;
 
 // ---------------------------------------------------------------- the hub
@@ -266,7 +266,7 @@ async function start(D, type, level, root) {
       <div class="qz-nums"><div><b>${fmt.int(run.right)}<small>/${fmt.int(run.n)}</small></b><span>Right</span></div><div><b>${run.streak}</b><span>In a row</span></div><div><b>${fmt.int(run.pts)}</b><span>Bucks</span></div></div>
       <p class="qz-kicker mt">${esc(name(type))} · ${LEVEL_NAME[level]}</p>
       <div class="qz-nums"><div><b>${fmt.int(c.pts)}</b><span>Bucks</span></div><div><b>${fmt.int(c.right)}<small>/${fmt.int(c.played)}</small></b><span>Right</span></div><div><b>${c.best}</b><span>Best run</span></div></div>
-      <p class="qz-board-note">${run.streak >= STREAK ? `<b>Double pay is on.</b> Every right answer is worth ${POINTS[level] * 2} until you miss.` : `${LEVEL_NAME[level]} pays ${POINTS[level]} a right answer. ${STREAK} in a row and it doubles until you miss.`}</p>
+      <p class="qz-board-note">${run.streak >= STREAK ? `<b>Double pay is on.</b> Every right answer is worth ${POINTS[level] * 2} until you miss.` : `${STREAK} right in a row and every answer pays double until you miss.`}</p>
       <p class="qz-board-note"><a href="#/quiz">All games and the ledger</a></p>
     </div>`;
   }
@@ -508,10 +508,10 @@ function render(D, q) {
       const ask = q.cast ? `Which cast member ${verb} “${e.t}”?` : `Who ${verb} “${e.t}”?`;
       const crew = q.job === 'wrote' ? e.wri : e.dir;
       return {
-        one: !q.cast,
+        one: true,
         body: `<p class="eq-q">${esc(ask)}</p><p class="qz-ask">${epCode(e)}.</p>`,
         ask, rightTag: verb[0].toUpperCase() + verb.slice(1),
-        choice: q.cast ? (c) => `<span class="qz-opt-l"><i class="dot" style="background:${color(c.k)}"></i>${esc(c.t)}<small class="eq-plays">plays ${esc(c.k)}</small></span>` : tOpt,
+        choice: q.cast ? (c) => `<span class="qz-opt-l"><i class="dot" style="background:${color(c.k)}"></i><span>${esc(c.t)}<small class="eq-plays">plays ${esc(c.k)}</small></span></span>` : tOpt,
         reveal: (i, right) => `<p class="qz-who"><a href="#/person/${slug(q.person)}">${esc(q.person)}</a> ${verb} ${epLink(e)}${crew.length > 1 ? `, with ${esc(crew.filter((p) => p !== q.person).join(' and '))}` : ''}.</p>${youPicked(q, i, right)}`,
         say: () => `${q.person} ${verb} it.`,
       };

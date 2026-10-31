@@ -135,7 +135,6 @@ export function home(D) {
   const { best: tops, worst: lows } = extremes(E);
   const mich = D.char.Michael;
   const S = D.seasons;
-  const gone = S.length - E[F.goodbye].s;
 
   const mGap = F.michaelRating.meanA - F.michaelRating.meanB;
   const hGap = F.hour.meanA - F.hour.meanB;
@@ -159,7 +158,7 @@ export function home(D) {
             <div class="hero-actions">
               <a class="btn" href="#/seasons">Pick a season ${arrow}</a>
               <a class="btn ghost" href="#/characters">Pick a character</a>
-              <a class="btn ghost" href="#/quiz">Play Who Said It?</a>
+              <a class="btn ghost" href="#/quiz/daily">Play Who Said It?</a>
             </div>
           </div>
           <div class="hero-counters">
@@ -225,7 +224,7 @@ export function home(D) {
         </div>
         <div class="grid g-7-5 mt2 home-nugget-row">
           ${nugget(D)}
-          <div class="sticky-note rv home-note" style="--d:.1s">Michael has <b>${fmt.int(mich.lines)}</b> lines in ${mich.episodes} episodes.<br>That’s ${fmt.pct(mich.share)} of the whole show, counting the ${nw(gone)} seasons after he leaves.</div>
+          <div class="sticky-note rv home-note" style="--d:.1s">Michael has <b>${fmt.int(mich.lines)}</b> lines in ${mich.episodes} episodes.<br>${esc(D.byLines[1].key)}, next on the list, has ${fmt.int(D.byLines[1].lines)}.</div>
         </div>
       </div>
     </section>
@@ -358,7 +357,7 @@ function playRow(D) {
   const qt = (e) => `“${esc(e.t)}”`;
   const lowText = lows.length === 1 ? `${qt(lows[0])} is alone at the bottom, at ${lows[0].r.toFixed(1)}.` : `${join(lows.map(qt))} share the bottom, at ${lows[0].r.toFixed(1)}.`;
   const cards = [
-    { h: '#/quiz', t: 'Who Said It?', big: fmt.pct(mich.share, 0), p: `of the show’s lines are Michael’s, so guessing “Michael” every time gets you about one in ${nw(oneIn)}. Five lines a day. Try to do better.`, go: 'Play today’s five' },
+    { h: '#/quiz/daily', t: 'Who Said It?', big: fmt.pct(mich.share, 0), p: `of the show’s lines are Michael’s, so guessing “Michael” every time gets you about one in ${nw(oneIn)}. Five lines a day. Try to do better.`, go: 'Play today’s five' },
     D.dundies?.length && { h: apol ? '#/dundies@most-apologetic' : '#/dundies', t: 'The Dundies', big: D.dundies.length, p: `awards, handed out by the data instead of Michael. ${apol ? 'This year’s Dundie for Most Apologetic goes to…' : ''}`, go: 'Open the envelopes' },
     loud && { h: '#/couples', t: 'Couples Discount', big: fmt.int(loud.n), p: `times ${esc(loud.who)} says “${esc(loud.whom)}”.${jp && jp !== loud ? ` ${esc(jp.who)} says “${esc(jp.whom)}” ${fmt.times(jp.n)}. The show’s most intense pair isn’t Jim and Pam.` : ''}`, go: 'See the ships' },
     { h: '#/episodes', t: 'Every episode, ranked', big: E.length, p: `episodes, best to worst, ties and all. ${lowText}`, go: 'See the list' },

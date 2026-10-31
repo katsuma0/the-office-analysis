@@ -126,7 +126,7 @@ function render(ev) {
       console.error(err);
       page = null;
     }
-    if (!page) page = { title: 'Not here', html: `<section class="wrap page-head"><p class="eyebrow">404</p><h1>Nobody here<br><em>but Creed.</em></h1><p class="lede">That page doesn't exist. Try the <a href="#/">front page</a>, or <a href="#/quiz">play Who Said It?</a> while you're here.</p></section>` };
+    if (!page) page = { title: 'Not here', html: `<section class="wrap page-head"><p class="eyebrow">404</p><h1>Nobody here<br><em>but Creed.</em></h1><p class="lede">Try the <a href="#/">front page</a>, or <a href="#/quiz/daily">play Who Said It?</a> while you're here.</p></section>` };
     app.innerHTML = `<div class="page">${page.html}</div>`;
     document.title = page.title ? `${page.title} · The Office, by the numbers` : 'The Office, by the numbers · Katsuma Onishi';
     page.after?.(app);
