@@ -469,7 +469,7 @@ export function matrix(el, D) {
       el.innerHTML = `<div style="display:flex;align-items:flex-start">
         <svg viewBox="0 0 ${lab} ${H}" width="${lab}" height="${H}" aria-hidden="true" style="flex:none;width:${lab}px;min-width:0">${names}</svg>
         <div class="mx-scroll" style="flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain">
-          <svg viewBox="${lab} 0 ${W - lab} ${H}" width="${W - lab}" height="${H}" role="img" aria-label="${esc(label)}" style="width:${W - lab}px;min-width:0;display:block">${body}</svg>
+          <svg viewBox="${lab} 0 ${W - lab} ${H}" width="${W - lab}" height="${H}" role="img" aria-label="${esc(label)}" style="width:${W - lab}px;min-width:0;max-width:none;display:block">${body}</svg>
         </div></div>`;
       // The edge fade says there's more to the right; at the end there isn't.
       const sc = el.querySelector('.mx-scroll');
