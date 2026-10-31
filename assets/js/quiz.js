@@ -51,14 +51,18 @@ const state = { prep: null, practice: null, nte: null };
 
 // ---------------------------------------------------------------- storage (private mode keeps it in memory)
 
+// Storage is read fresh each time so a second tab's writes show up. Once a write has failed (private mode, or
+// the katsuma.ca quota is full), what's on disk is stale, so the in-memory copy wins for that key.
 const mem = {};
+const stuck = {};
 function load(key) {
+  if (stuck[key]) return mem[key] ?? null;
   try { const v = localStorage.getItem(key); if (v) return JSON.parse(v); } catch (e) { /* private mode or bad JSON */ }
   return mem[key] ?? null;
 }
 function save(key, v) {
   mem[key] = v;
-  try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* private mode: it lasts this visit */ }
+  try { localStorage.setItem(key, JSON.stringify(v)); stuck[key] = false; } catch (e) { stuck[key] = true; /* it lasts this visit */ }
 }
 
 // ---------------------------------------------------------------- dates
