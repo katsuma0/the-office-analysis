@@ -140,13 +140,14 @@ button { font: inherit; color: inherit; }
 }
 .menu-btn { display: none; }
 
-/* The menu drops down to three quarters of the way down the screen; the dimmed strip below it closes it (app.js). */
+/* The menu drops down to three quarters of the way down the screen. A tap anywhere but a link closes it (app.js). */
 .sheet {
   position: fixed; inset: 63px 0 auto 0; height: calc(75vh - 63px); height: calc(75dvh - 63px); min-height: 320px; z-index: 45; background: var(--bg);
   padding: 8px var(--pad) 16px; overflow: auto; overscroll-behavior: contain; animation: sheet-in .3s var(--ease);
-  border-bottom: 1px solid var(--line); border-radius: 0 0 22px 22px; box-shadow: 0 24px 48px -24px rgb(0 0 0 / 35%), 0 0 0 100vmax rgb(10 10 12 / 28%);
+  border-bottom: 1px solid var(--line); border-radius: 0 0 22px 22px; box-shadow: 0 24px 48px -24px rgb(0 0 0 / 35%);
 }
 .sheet nav { display: flex; flex-direction: column; }
+.sheet-back { position: fixed; inset: 0; z-index: 44; background: rgb(10 10 12 / 28%); cursor: pointer; -webkit-tap-highlight-color: transparent; animation: fade .3s; }
 .sheet a {
   text-decoration: none; font: 500 23px/1.25 var(--serif); letter-spacing: -.015em; padding: clamp(9px, 1.5dvh, 13px) 0;
   border-bottom: 1px solid var(--line); opacity: 0; animation: rise .45s var(--ease) forwards;
