@@ -210,7 +210,7 @@ function index() {
     { t: 'Who Said It? quiz', s: 'Page', h: '#/quiz' }, { t: 'The Dundies', s: 'Page', h: '#/dundies' },
     { t: 'Couples Discount', s: 'Page', h: '#/couples' }, { t: 'How I made this', s: 'Page', h: '#/about' },
   ];
-  D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
+  D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
   D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}` }));
   D.episodes.forEach((e) => out.push({ t: e.t, s: `S${e.s} E${e.se}`, h: `#/episode/${e.id}` }));
   Object.values(D.people).forEach((p) => out.push({ t: p.name, s: Object.keys(p.roles).join(' and '), h: `#/person/${p.slug}` }));

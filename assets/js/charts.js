@@ -128,8 +128,22 @@ export function lollipops(el, eps, { avg, showAvg = true, yMin = 6, label = 'Epi
     const anchor = bi < eps.length / 2 ? 'start' : 'end';
     body += `<text class="lbl-strong" x="${x(bi) + (anchor === 'start' ? 10 : -10)}" y="${y(best.r) - 8}" text-anchor="${anchor}">${esc(best.t)} · ${best.r.toFixed(1)}</text>`;
     if (showAvg && avg) {
-      body += `<line class="avgline draw" x1="${m.l}" x2="${W - m.r}" y1="${y(avg)}" y2="${y(avg)}" pathLength="1" style="--d:.6s"/>
-      <text x="${W - m.r}" y="${y(avg) + 16}" text-anchor="end" class="lbl-strong">Average ${avg.toFixed(2)}</text>`;
+      // Put the label in whichever corner of the line has no dot or best-episode label under it.
+      const lw = 84, ya = y(avg), r = step > 22 ? 6 : 4.5;
+      const bestBox = { x0: anchor === 'start' ? x(bi) + 6 : x(bi) - 10 - best.t.length * 7, x1: anchor === 'start' ? x(bi) + 10 + best.t.length * 7 : x(bi) - 6, y0: y(best.r) - 22, y1: y(best.r) - 4 };
+      const spots = [
+        { x: W - m.r, a: 'end', y0: ya + 4, y1: ya + 20, dy: 16 }, { x: W - m.r, a: 'end', y0: ya - 20, y1: ya - 4, dy: -8 },
+        { x: m.l + 4, a: 'start', y0: ya + 4, y1: ya + 20, dy: 16 }, { x: m.l + 4, a: 'start', y0: ya - 20, y1: ya - 4, dy: -8 },
+      ];
+      const clear = (sp) => {
+        const x0 = sp.a === 'end' ? sp.x - lw : sp.x, x1 = x0 + lw;
+        const hitsDot = eps.some((e, i) => x(i) + r > x0 && x(i) - r < x1 && y(e.r) + r > sp.y0 && y(e.r) - r < sp.y1);
+        const hitsBest = bestBox.x1 > x0 && bestBox.x0 < x1 && bestBox.y1 > sp.y0 && bestBox.y0 < sp.y1;
+        return !hitsDot && !hitsBest;
+      };
+      const sp = spots.find(clear) || spots[0];
+      body += `<line class="avgline draw" x1="${m.l}" x2="${W - m.r}" y1="${ya}" y2="${ya}" pathLength="1" style="--d:.6s"/>
+      <text x="${sp.x}" y="${ya + sp.dy}" text-anchor="${sp.a}" class="lbl-strong">Average ${avg.toFixed(2)}</text>`;
     }
     el.innerHTML = svg(W, H, body, label);
     bind(el, '.mark', eps, (e) => epTip(e, `<div class="tr"><span>Lines</span><b>${fmt.int(e.lines)}</b></div><div class="tr"><span>Directed by</span><b>${esc(e.dir.join(', '))}</b></div>`), (e) => `#/episode/${e.id}`);
@@ -409,6 +423,9 @@ export function matrix(el, D) {
 
 // ---------------------------------------------------------------- the barcode: when each person talks in an episode
 
+// "David Wallace" doesn't fit the name column on a phone; "David W." does.
+const short = (k) => (k.length > 9 && k.includes(' ') ? `${k.split(' ')[0]} ${k.split(' ').at(-1)[0]}.` : k);
+
 export function barcode(el, ep, D) {
   const seq = ep.seq;
   const rows = ep.top.slice(0, 6).map((t) => t.k);
@@ -426,7 +443,7 @@ export function barcode(el, ep, D) {
         count++;
         r += `<rect x="${(i * bw).toFixed(2)}" y="2" width="${Math.max(1.2, bw).toFixed(2)}" height="${H - 4}" rx="0.6"/>`;
       }
-      return `<div class="barcode-row rv" style="--d:${ri * 0.06}s"><span class="bn"><i class="dot" style="background:${color(k)}"></i>${esc(k)}</span>
+      return `<div class="barcode-row rv" style="--d:${ri * 0.06}s"><span class="bn" title="${esc(k)}"><i class="dot" style="background:${color(k)}"></i>${esc(short(k))}</span>
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="${esc(k)} speaks ${count} lines" style="fill:${color(k)}">${r}</svg>
         <span class="bv">${count}</span></div>`;
     }).join('')}</div>

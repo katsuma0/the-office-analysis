@@ -119,7 +119,8 @@ export function countUp(node) {
   const t0 = performance.now();
   const dur = 1400;
   const step = (t) => {
-    const k = Math.min(1, (t - t0) / dur);
+    // The first frame's timestamp can be a hair before t0, which would count down to "-0".
+    const k = Math.min(1, Math.max(0, (t - t0) / dur));
     out(to * (1 - Math.pow(1 - k, 4)));
     if (k < 1) requestAnimationFrame(step);
   };
