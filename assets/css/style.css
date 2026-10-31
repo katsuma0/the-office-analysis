@@ -1028,7 +1028,6 @@ a.word:hover, a.word:focus-visible { background: var(--accent-soft); transform: 
 /* Dundie and couple links in the character hero */
 .ribbons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
 .ribbons .rb-h { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-right: 2px; }
-.ribbons .rb-h:not(:first-child) { margin-left: 8px; }
 .ribbon { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 12px; border-radius: 999px; font-size: 13.5px; font-weight: 600; text-decoration: none; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); transition: transform .15s ease, border-color .15s ease; }
 .ribbon:hover { transform: translateY(-1px); border-color: var(--cc, var(--accent)); }
 .ribbon.gold { background: var(--note); color: var(--note-ink); border-color: transparent; }
@@ -1791,3 +1790,50 @@ button.tk-line:focus-visible { outline: 2px solid var(--accent); outline-offset:
   overflow-y: hidden; overscroll-behavior-x: contain;
 }
 details.tv .table-wrap { overflow-y: auto; }
+
+/* ================================================================ review fixes */
+
+/* sweep-01: on a phone the nine season pills fit in one row, so the current season (8 or 9) is never
+   scrolled off or faded by the mask. pages.js gives the season page's subnav pills the extra class
+   .season-pills. Three classes so it beats the later ".pills.scroll { overflow-y: hidden }" rail rule. */
+@media (max-width: 520px) {
+  .subnav .pills.scroll.season-pills {
+    display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px;
+    overflow: visible; mask-image: none; -webkit-mask-image: none;
+  }
+  .subnav .season-pills .pill { padding-inline: 0; text-align: center; }
+}
+
+/* fan-09: focus rings on pills inside a sideways scroller (#/episodes season filter, season subnav)
+   are drawn inside the pill so the scroller doesn't clip them. */
+.pills.scroll .pill:focus-visible { outline-offset: -2px; }
+
+/* fan-04 (toggle half, used on #/episodes and other pages): in dark, the selected thumb (--surface)
+   is nearly the same as the track (--bg-2). Lift it to --line-2 so the choice shows. */
+:root[data-theme="dark"] .toggle button.on { background: var(--line-2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .toggle button.on { background: var(--line-2); }
+}
+
+/* fan-02 (global, skip if another fix file already has it): main#app takes focus after every render
+   only so screen readers and the skip link land somewhere; it doesn't need a ring framing the page. */
+#app:focus, #app:focus-visible { outline: none; }
+
+/* sweep-03: character page ribbons. people.js now wraps each label with its own pills in .rb-g, so
+   "Couples Discount" can't end the Dundie line on a phone with its pills orphaned below it.
+   The label is now the first child of its group, so the old
+   `.ribbons .rb-h:not(:first-child) { margin-left: 8px; }` (style.css ~1031) no longer matches and can go;
+   the 16px column gap spaces the groups instead. Theme-neutral (no colours). */
+.ribbons { column-gap: 16px; }
+.ribbons .rb-g { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+
+/* fan-03: "Longest single line" on character pages. Drop the hidden inner scroll box (no visible scrollbar,
+   no fade, read as a truncation bug); the card grows instead. Pam's 232 words are about 590px on a phone.
+   Replaces the max-height/overflow in `.long-line .tx` (style.css ~935); keep its font-size, line-height
+   and overflow-wrap. Theme-neutral. */
+.long-line .tx { max-height: none; overflow: visible; }
+
+/* fan-04, toggle half only (#/crew Role/Sort, #/character Share/Lines). This is the shared .toggle
+   component, so it also changes #/episodes and #/findings: merge it once. In dark the .on thumb was
+   --surface (#1b1c20) on a --bg-2 (#17181c) track; --line-2 (#3a3b42) separates it. Light is unchanged. */
+/* (toggle contrast: see the pages fixes above) */
