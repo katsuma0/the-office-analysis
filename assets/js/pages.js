@@ -808,7 +808,7 @@ export function episode(D, id, lines) {
   const partner = e.approx ? E.find((x) => x.approx && x.id !== e.id && x.date === e.date) : null;
   const isPart2 = partner && partner.id < e.id;
   const base = partBase(e);
-  const SHUF = 'This episode’s fan transcript has scenes shuffled together';
+  const SHUF = 'In this episode’s fan transcript, two scenes trade lines for a stretch';
   const approxNote = e.approx ? `${esc(base)} aired as one hour. The transcript comes as one piece, so the split between the two parts is approximate.` : '';
   const opening = !e.shuffled && !isPart2;
   const kw = (e.kw || []).slice(0, 5);

@@ -32,7 +32,7 @@ python3 scripts/build_data.py
 
 The 2023 version merged its tables on season and title, which put every two-part episode in twice: 201 rows for 188 episodes. Everything here is recomputed with one row per episode. The "that's what she said" result changed the most.
 
-The transcript has its own problems, fixed or flagged in `scripts/build_data.py`. In 62 episodes the fan transcript has scenes shuffled together line by line, so anything that depends on line order skips or flags those episodes. About 225 lines had broken characters (`â€”`) and are repaired. Plain "David" in The Seminar is David Brent, not David Wallace, and plain "Robert" outside Robert California's run (Search Committee to the season 8 finale) is Senator Lipton or someone from Weyer-Hammer.
+The transcript has its own problems, fixed or flagged in `scripts/build_data.py`. It was cut into pages of 244 rows and then sorted by row-within-page, so in 149 episodes everything past row 244 was dealt in between the opening lines, one each. Sorting by page then row puts them back: Performance Review's page one ends on Jim's "Oh-" and page two opens with Pam's "As a human being." Five episodes still have a stretch where two scenes trade lines in the source itself, and anything that depends on line order skips or flags those. About 225 lines had broken characters (`â€”`) and are repaired. Plain "David" in The Seminar is David Brent, not David Wallace, plain "Robert" outside Robert California's run (Search Committee to Free Family Portrait Studio) is Senator Lipton or someone from Weyer-Hammer, and the Pete in Employee Transfer and Niagara is Jim's brother.
 
 ## Sources
 

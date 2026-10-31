@@ -79,6 +79,24 @@ for i, e in enumerate(episodes):
 # ---------------------------------------------------------------- transcript
 
 df = pd.read_csv(RAW / "schrute.csv")
+
+# Upstream, each episode was cut into pages of 244 rows and then sorted by row-within-page, so
+# anything past row 244 got dealt in between the opening rows: page 1 row 0, page 2 row 0, page 1
+# row 1, and so on. In Performance Review, "Jim: Oh-" at the end of page 1 is answered by
+# "Pam: As a human being." at the top of page 2. Sorting back by (page, row) undoes it exactly.
+# The page size counts the empty rows too, so this runs before they're dropped.
+PAGE = 244
+
+
+def unpage(g):
+    # Row d of the file is line true_pos[d] of the episode.
+    true_pos = sorted(range(len(g)), key=lambda j: (j % PAGE, j // PAGE))
+    return g.iloc[np.argsort(true_pos)]
+
+
+df = pd.concat([unpage(g) for _, g in df.groupby(["season", "episode_name"], sort=False)]).reset_index(drop=True)
+df["paged"] = df.groupby(["season", "episode_name"], sort=False)["text"].transform("size") > PAGE
+
 df["text"] = df["text"].fillna("").astype(str).str.strip()
 df["text_w_direction"] = df["text_w_direction"].fillna("").astype(str)
 df = df[df["text"] != ""].copy()
@@ -115,6 +133,9 @@ EPISODE_ALIASES = {
     ("Classy Christmas (Parts 1&2)", "Robert"): "Senator Lipton",
     ("Stairmageddon", "Robert"): "Senator Lipton",
     ("Paper Airplane", "Robert"): "Robert (Weyer-Hammer)",
+    # Jim's brother, at the engagement lunch and the wedding, years before Erin's Pete.
+    ("Employee Transfer", "Pete"): "Pete Halpert",
+    ("Niagara (Parts 1&2)", "Pete"): "Pete Halpert",
 }
 
 
@@ -165,7 +186,7 @@ for (s, name), g in df.groupby(["season", "episode_name"], sort=False):
     parts = by_key_part.get((s, k))
     if parts and len(parts) == 2:
         # Niagara and The Delivery aired as one hour but sit in the ratings data as two episodes.
-        # The transcript is one file with scenes shuffled together, so the split between parts is approximate.
+        # The transcript is one file with no marker between the parts, so the split is at the halfway line.
         half = len(g) // 2
         df.loc[g.index[:half], "ep_id"] = parts[0]["id"]
         df.loc[g.index[half:], "ep_id"] = parts[1]["id"]
@@ -185,18 +206,13 @@ df.loc[(df["speaker"] == "Robert") & ~df["ep_id"].between(rc_first, rc_last), "s
 
 # ---------------------------------------------------------------- scrambled episodes
 
-# In about a third of the transcripts, two or more scenes are woven together line by line.
-# In real dialogue a speaker comes back two lines later more often than four lines later;
-# in a shuffled transcript it's the other way round. Anything that depends on line order
-# (who answers whom, the opening lines, the who-talks-when strip) skips or flags these.
-scrambled = set()
-for ep, g in df.groupby("ep_id"):
-    sp = g["speaker"].tolist()
-    r2 = np.mean([sp[i] == sp[i - 2] for i in range(2, len(sp))])
-    r4 = np.mean([sp[i] == sp[i - 4] for i in range(4, len(sp))])
-    if r4 - r2 > 0.10:
-        scrambled.add(int(ep))
-scrambled |= approx_split
+# With the pages put back, a few episodes still have a stretch where two scenes trade lines, and
+# that one's in the source itself. I found these by looking for runs where a speaker comes back
+# four lines later more often than two lines later, then read each one. Crime Aid's auction and
+# New Boss's echo bit trip the same test and are real, so this is a hand-checked list.
+LOCAL_SHUFFLE = {"The Dundies", "The Incentive", "After Hours", "Andy's Ancestry", "Dwight Christmas"}
+scrambled = {e["id"] for e in episodes if e["title"] in LOCAL_SHUFFLE}
+assert len(scrambled) == len(LOCAL_SHUFFLE), "a LOCAL_SHUFFLE title didn't match"
 
 # ---------------------------------------------------------------- characters
 
@@ -497,10 +513,11 @@ df["twss"] = df["norm"].map(lambda t: len(twss_re.findall(t)))
 # Jim asking whether the harassment policy covers it isn't a joke.
 df.loc[df["text"].str.startswith("Does that include"), "twss"] = 0
 
-# Where each joke's setup is, checked by hand against the episodes because the transcript
-# order can't be trusted: "self" means it's inside the same line, -1 / -2 lines back, None not in the transcript.
-TWSS_SETUP = [None, -1, -2, -2, -1, -1, "self", -2, -2, -2, "self", "self", "self", "self", "self", -1,
-              -1, -1, -1, -2, -1, "self", -1, -1, -1, -1, -1, "self", "self", "self", -1, -2]
+# Where each joke's setup is, read by hand: "self" means it's inside the same line, -1 is the line
+# before, None means the setup isn't in the transcript. With the transcript back in order, every
+# setup that isn't in the joke's own line is the line right before it.
+TWSS_SETUP = [None, -1, -1, -1, -1, -1, "self", -1, -1, -1, "self", "self", "self", "self", "self", -1,
+              -1, -1, -1, -1, -1, "self", -1, -1, -1, -1, -1, "self", "self", "self", -1, -1]
 twss_rows = df.index[df["twss"] > 0].tolist()
 assert len(twss_rows) == len(TWSS_SETUP), (len(twss_rows), len(TWSS_SETUP))
 twss_list = []
@@ -794,12 +811,13 @@ COUPLES = [("Jim", "Pam"), ("Michael", "Holly"), ("Michael", "Jan"), ("Dwight", 
 ily = re.compile(r"\bi love you\b")
 couples_out = []
 for a, b in COUPLES:
+    # Search the text with apostrophes left in, so "Pam's" counts as saying Pam.
     pa = re.compile(r"\b" + b.lower() + r"\b")
     pb = re.compile(r"\b" + a.lower() + r"\b")
     na = df[df["speaker"] == a]
     nb = df[df["speaker"] == b]
-    a_says = na["norm"].map(lambda t: len(pa.findall(t)))
-    b_says = nb["norm"].map(lambda t: len(pb.findall(t)))
+    a_says = na["text"].str.lower().map(lambda t: len(pa.findall(t)))
+    b_says = nb["text"].str.lower().map(lambda t: len(pb.findall(t)))
     shared = sorted(set(na["ep_id"]) & set(nb["ep_id"]))
     back = Counter()
     prev_sp, prev_ep = None, None
@@ -1017,6 +1035,7 @@ totals = {
     "episodes": len(ep_out), "lines": int(len(df)), "words": int(df["nwords"].sum()),
     "speakers": int(df["speaker"].nunique()), "directors": len(directors), "writers": len(writers),
     "vocab": len(all_counts), "shuffled": len(scrambled),
+    "repaired": int(df.loc[df["paged"], "ep_id"].nunique()), "page": PAGE,
 }
 
 OUT.mkdir(exist_ok=True)

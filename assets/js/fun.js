@@ -565,7 +565,7 @@ const BLURB = {
   'pam-roy': () => 'Engaged since before the cameras showed up. She calls off the wedding.',
   'andy-angela': () => 'He proposes in the season 4 finale. Phyllis says something at Christmas.',
   'ryan-kelly': () => 'On, off, on, off, and in the Finale, gone together.',
-  'erin-pete': (D) => `Plop. Season 9. Not Jim’s brother Pete, who has a few lines in ${epT(D, 'Niagara: Part 2')} and doesn’t count here.`,
+  'erin-pete': (D) => `Plop. Season 9. Not Jim’s brother Pete, from the lunch in ${epT(D, 'Employee Transfer')} and the wedding, who’s kept separate.`,
   'michael-dwight': () => 'Not a couple, but. The World’s Best Boss and the Assistant to the Regional Manager.',
 };
 
@@ -583,17 +583,10 @@ const dots = (c) => {
 };
 const pairName = (c, amp = '&amp;') => `${esc(c.a)} ${amp} ${esc(c.b)}`;
 
-// Pete Miller joins in season 9. The transcript's earlier "Pete" is Pete Halpert, Jim's brother, at the wedding in
-// Niagara. The data can't tell the two apart, so this rule is typed in: before that season, a Pete isn't Erin's Pete.
-const FROM = { Pete: 9 };
-
-// A long two-person stretch only means a conversation if the transcript is in broadcast order. The data marks The
-// Dundies and Michael's Last Dundies as in order, but their first hundred or so rows are visibly interleaved, so
-// runs there are treated as shuffled too. (The back-and-forth numbers come from the data and still count them.)
-const MIXED = [/^the dundies$/i, /last dundies/i];
+// A long two-person stretch only means a conversation if the transcript is in broadcast order.
 const inOrder = (D, id) => {
   const e = D.episodes[id];
-  return !!e && !e.shuffled && !MIXED.some((re) => re.test(e.t));
+  return !!e && !e.shuffled;
 };
 const nn = (...a) => (a.some((v) => v > 12) ? a.map((v) => fmt.int(v)) : a.map(nw));
 
@@ -875,7 +868,7 @@ function drawPanel(panel, D, c) {
 export function couples(D) {
   const E = D.episodes;
   const list = (D.couples || []).map((c) => {
-    const shared = c.shared.filter((id) => E[id] && E[id].s >= (FROM[c.a] || 1) && E[id].s >= (FROM[c.b] || 1));
+    const shared = c.shared.filter((id) => E[id]);
     const clean = shared.filter((id) => !E[id].shuffled).length;
     // Same sum as the data's perShared (back over clean shared episodes), unrounded so the ranking is exact.
     return { ...c, id: slug(`${c.a}-${c.b}`), shared, clean, perShared: clean ? c.back / clean : 0 };
