@@ -31,6 +31,25 @@ export const initials = (name) => name.split(/\s+/).map((w) => w[0]).slice(0, 2)
 // Streaming numbering (hour-longs count as two), which is how fans know the episodes.
 export const epCode = (e) => `S${e.s} · E${e.se}`;
 
+// ---------------------------------------------------------------- navigation
+
+// The router opens a page at the top when the reader got there forward, and restores the old scroll on Back.
+// Link clicks are marked by the router itself; charts and other code that navigate without a link use nav.go.
+// The mark is the URL being opened, so a click that goes nowhere (same page, cancelled) can't leak into the next Back.
+export const nav = {
+  to: null,
+  mark(h) {
+    const u = new URL(h, location.href).href;
+    nav.to = u === location.href ? null : u;
+    return nav.to != null;
+  },
+  go(h) {
+    if (!nav.mark(h)) return false;
+    location.hash = new URL(h, location.href).hash;
+    return true;
+  },
+};
+
 // ---------------------------------------------------------------- tooltip
 
 const tipEl = () => document.querySelector('.tip');
@@ -84,7 +103,7 @@ export function hover(node, html, href) {
       return;
     }
     tip.hide();
-    if (href) location.hash = href;
+    if (href) nav.go(href);
   });
 }
 

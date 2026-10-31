@@ -11,6 +11,12 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const join = (a) => (a.length < 2 ? a[0] ?? '' : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
 const same = (a, b) => Math.abs(a - b) < 1e-9;
 const first = (k) => String(k).split(' ')[0];
+// The part after @ in the address. A stray % in a hand-typed or cut-off link can't be decoded, so use it raw.
+function hashAnchor() {
+  let h = location.hash;
+  try { h = decodeURIComponent(h); } catch (e) { /* malformed escape */ }
+  return h.split('@')[1];
+}
 
 // Titles in running text get quotes, like everywhere else on the site.
 const epA = (D, id) => {
@@ -146,23 +152,17 @@ function nextUp(rows) {
   const rk = Math.min(...rest.map((r) => r.rank));
   return rest.filter((r) => r.rank === rk);
 }
-const nextTxt = (D, g, f, u = '') => {
-  if (!g.length) return '';
-  if (g.length === 1) return `${charA(D, g[0].k)} is next, at ${f(g[0].v)}${u}.`;
-  return `${join(g.map((r) => charA(D, r.k)))} are next, tied at ${f(g[0].v)}${u}.`;
-};
 const oneIn = (per, v) => nw(Math.round(per / v));
 
 const STAT = {
   'perfect-attendance': (D, a, rows, f) => {
     const n = D.episodes.length;
     const w = rows[0];
-    const alone = rows.filter((r) => r.v === w.v).length === 1;
-    let s = w.v === n ? `Has lines in all ${n} episodes.${alone ? ' Nobody else does.' : ''}` : `Has lines in ${w.v} of ${n} episodes.`;
+    let s = w.v === n ? 'That’s all of them.' : `Has lines in ${w.v} of ${n} episodes.`;
     const g = nextUp(rows);
     const code = g.length === 1 ? D.char[g[0].k]?.code : null;
     const miss = code ? D.episodes.filter((e) => !(e.c[code] > 0)) : [];
-    s += miss.length === 1 ? ` ${charA(D, g[0].k)} misses only ${epA(D, miss[0].id)}.` : ` ${nextTxt(D, g, f)}`;
+    if (miss.length === 1) s += ` ${charA(D, g[0].k)} misses only ${epA(D, miss[0].id)}.`;
     const gb = D.findings?.goodbye;
     const mc = D.char.Michael?.code;
     if (gb != null && mc && D.episodes.slice(0, gb + 1).every((e) => e.c[mc] > 0)) {
@@ -170,30 +170,31 @@ const STAT = {
     }
     return { big: f(w.v), unit: 'episodes', words: s };
   },
-  'longest-speech': (D, a, rows, f) => {
-    const where = a.line ? `${a.line && /coal walk/i.test(a.line.t) ? 'The coal walk speech, in' : 'In'} ${epA(D, a.line.ep)}.` : '';
-    return { big: f(rows[0].v), unit: 'words in one line', words: `${where} ${nextTxt(D, nextUp(rows), f)}` };
-  },
+  // The episode is on the quote's source line, so the words only say which speech it is.
+  'longest-speech': (D, a, rows, f) => ({
+    big: f(rows[0].v), unit: 'words in one line', words: a.line && /coal walk/i.test(a.line.t) ? 'The coal walk speech.' : '',
+  }),
   'most-apologetic': (D, a, rows, f) => ({
     big: f(rows[0].v), unit: 'sorries per 1,000 lines',
-    words: `About one line in ${oneIn(1000, rows[0].v)} has a “sorry” in it. ${nextTxt(D, nextUp(rows), f, ' per 1,000')}`,
+    words: `About one line in ${oneIn(1000, rows[0].v)} has a “sorry” in it.`,
   }),
   'talked-about': (D, a, rows, f) => {
     const c = D.char[rows[0].k];
     const said = c ? `Other people say “${esc(first(c.key))}” ${fmt.int(c.mentioned)} times. ${esc(first(c.key))} says ${fmt.int(c.lines)} lines.` : '';
-    return { big: f(rows[0].v), unit: 'times named per line said', words: `${said} ${nextTxt(D, nextUp(rows), f)}` };
+    return { big: f(rows[0].v), unit: 'times named per line said', words: said };
   },
   'fewest-words': (D, a, rows, f) => ({
     big: f(rows[0].v), unit: 'words per line',
-    words: `The whole show averages ${fmt.dec(D.totals.words / D.totals.lines, 1)}. ${nextTxt(D, nextUp(rows), f)}`,
+    words: `The whole show averages ${fmt.dec(D.totals.words / D.totals.lines, 1)}.`,
   }),
   'never-stops': (D, a, rows, f) => ({
     big: f(rows[0].v), unit: 'words per line',
-    words: `The whole show averages ${fmt.dec(D.totals.words / D.totals.lines, 1)}. ${nextTxt(D, nextUp(rows), f)}`,
+    words: `The whole show averages ${fmt.dec(D.totals.words / D.totals.lines, 1)}.`,
   }),
+  // The unit follows the award's own word, so the card never says "Point" over "mark".
   exclamation: (D, a, rows, f) => ({
-    big: f(rows[0].v), unit: 'of lines have an exclamation mark',
-    words: `About one line in ${oneIn(100, rows[0].v)}. ${nextTxt(D, nextUp(rows), f)}`,
+    big: f(rows[0].v), unit: `of lines have an exclamation ${/point/i.test(a.award) ? 'point' : 'mark'}`,
+    words: `About one line in ${oneIn(100, rows[0].v)}.`,
   }),
   'most-questions': (D, a, rows, f) => {
     const g = nextUp(rows);
@@ -203,7 +204,7 @@ const STAT = {
     else if (g.length === 1) {
       const d = fmt.dec(rows[0].v - g[0].v, 1);
       s = `${charA(D, g[0].k)} is ${d === '0.1' ? 'a tenth of a point' : `${d} points`} behind.`;
-    } else s = nextTxt(D, g, f);
+    } else s = '';
     return { big: f(rows[0].v), unit: 'of lines end in a question mark', words: `About one in ${oneIn(100, rows[0].v)}. ${s}` };
   },
   'i-love-you': (D, a, rows, f) => {
@@ -211,25 +212,20 @@ const STAT = {
     let s = '';
     if (g.length === 1) {
       const x = rows[0].v / g[0].v;
-      s = same(x, 2) ? `Twice as many as ${charA(D, g[0].k)}, who is next.` : x >= 1.5 ? `${fmt.dec(x, 1)} times as many as ${charA(D, g[0].k)}, who is next.` : nextTxt(D, g, f);
-    } else s = nextTxt(D, g, f);
-    const ranks = [...new Set(rows.map((r) => r.rank))].filter((rk) => rk > 1 && rk !== g[0]?.rank);
-    for (const rk of ranks) {
-      const t = rows.filter((r) => r.rank === rk);
-      if (t.length > 2) s += ` Then ${nw(t.length)} people tie on ${t[0].v}: ${join(t.map((r) => charA(D, r.k)))}.`;
+      s = same(x, 2) ? `Twice as many as ${charA(D, g[0].k)}.` : x >= 1.5 ? `${fmt.dec(x, 1)} times as many as ${charA(D, g[0].k)}.` : '';
     }
     return { big: f(rows[0].v), unit: 'lines with “I love you”', words: s };
   },
   'best-singer': (D, a, rows, f) => ({
     big: f(rows[0].v), unit: 'lines marked as singing',
-    words: `Self-nominated, but the stage directions agree. ${nextTxt(D, nextUp(rows), f)}`,
+    words: 'Self-nominated, but the stage directions agree.',
   }),
   'most-sighs': (D, a, rows, f) => {
     const g = nextUp(rows);
     const x = g.length === 1 ? rows[0].v / g[0].v : 0;
     return {
       big: f(rows[0].v), unit: 'lines with a sigh',
-      words: x >= 2 ? `About ${nw(Math.round(x))} times as many as ${charA(D, g[0].k)}, who is next with ${f(g[0].v)}.` : nextTxt(D, g, f),
+      words: x >= 2 ? `About ${nw(Math.round(x))} times as many as ${charA(D, g[0].k)}.` : '',
     };
   },
   scoff: (D, a, rows, f) => {
@@ -238,11 +234,11 @@ const STAT = {
   },
   laughing: (D, a, rows, f) => ({
     big: f(rows[0].v), unit: 'laughs per 1,000 lines',
-    words: `${esc(first(rows[0].k))} laughs on about one line in ${oneIn(1000, rows[0].v)}. ${nextTxt(D, nextUp(rows), f, ' per 1,000')}`,
+    words: `${esc(first(rows[0].k))} laughs on about one line in ${oneIn(1000, rows[0].v)}.`,
   }),
   'hold-please': (D, a, rows, f) => ({
     big: f(rows[0].v), unit: 'phone lines per 1,000',
-    words: `About one line in ${oneIn(1000, rows[0].v)} is on the phone. ${nextTxt(D, nextUp(rows), f, ' per 1,000')}`,
+    words: `About one line in ${oneIn(1000, rows[0].v)} is on the phone.`,
   }),
 };
 
@@ -250,7 +246,7 @@ function dundieCard(D, a, i) {
   const rows = boardRows(D, a);
   if (!rows.length) return '';
   const f = (v) => fv(a, v);
-  const st = (STAT[a.id] || ((D2, a2, r2, f2) => ({ big: f2(r2[0].v), unit: a2.unit, words: nextTxt(D2, nextUp(r2), f2) })))(D, a, rows, f);
+  const st = (STAT[a.id] || ((D2, a2, r2, f2) => ({ big: f2(r2[0].v), unit: a2.unit, words: '' })))(D, a, rows, f);
   const k = a.k || rows[0].k;
   const name = D.char[k]?.name ?? k;
   const stage = STAGE[a.id];
@@ -278,7 +274,7 @@ function dundieCard(D, a, i) {
       </div>
     </div>
     <p class="dn-big"><b>${st.big}</b> <span>${esc(st.unit)}</span></p>
-    <p class="dn-words">${st.words}</p>
+    ${st.words ? `<p class="dn-words">${st.words}</p>` : ''}
     <ol class="dn-board" aria-label="${rows.asc ? 'Leaderboard, fewest first' : 'Leaderboard'}">${rows.map((r) => `<li class="${r.k === k ? 'me' : ''}">
       <span class="dn-rk">${r.tie ? 'T-' : ''}${r.rank}</span>
       <span class="dn-rn"><i class="dot" style="background:${color(r.k)}"></i>${charA(D, r.k)}</span>
@@ -317,22 +313,22 @@ const REAL = [
     ],
     // On Michael's tape of an earlier year, with Roy accepting. It isn't handed out on the night.
     foot: {
-      text: 'Longest Engagement isn’t on the list. It’s on Michael’s tape of an earlier year, with Roy accepting for Pam, and Jim tells him the joke is getting lazy.',
+      text: 'Longest Engagement isn’t handed out on the night. It’s on Michael’s tape of an earlier year, with Roy accepting for Pam.',
       say: [{ find: 'see you next year' }, { find: 'it gets funnier', before: 1 }, { find: 'comes across as lazy' }],
     },
   },
   {
     title: /last dundies/i,
-    note: 'DeAngelo co-hosts, the restaurant cuts the microphone, and everyone goes back to the office to finish.',
+    note: 'Deangelo co-hosts, the restaurant cuts the microphone, and everyone goes back to the office to finish.',
     awards: [
-      { award: 'Extreme Repulsiveness', k: 'Toby', by: 'DeAngelo', say: [{ find: 'accept the Extreme Repulsiveness Award', before: 2, after: 1 }, { find: 'I really disagree with this', after: 1 }] },
+      { award: 'Extreme Repulsiveness', k: 'Toby', by: 'Deangelo', say: [{ find: 'accept the Extreme Repulsiveness Award', before: 2, after: 1 }, { find: 'I really disagree with this', after: 1 }] },
       { award: 'Best Dad', k: 'Jim', say: [{ find: 'Best Dad Dundie', before: 2 }, { find: 'think to mention me' }] },
       { award: 'Best Mom', k: 'Meredith', say: [{ find: 'Best Mom Dundie', after: 2 }, { find: 'not gonna be a good mom tonight', after: 1 }] },
       { award: 'Hottest in the Office', k: 'Danny Cordray', say: [{ find: 'Hottest in the office goes to', before: 1, after: 1 }] },
       { award: 'The Diabetes Award', k: 'Stanley', say: [{ find: 'The Diabetes Award goes', before: 1 }, { find: 'I have diabetes too', after: 1 }] },
-      { award: 'Promising Assistant Manager', k: 'Dwight', by: 'DeAngelo', say: [{ find: 'promising Assistant Manager Dundie', before: 1 }] },
+      { award: 'Promising Assistant Manager', k: 'Dwight', by: 'Deangelo', say: [{ find: 'promising Assistant Manager Dundie', before: 1 }] },
       { award: 'Cutest Red Head in the Office', k: 'Erin', say: [{ find: 'Cutest Red Head in the Office', before: 1 }] },
-      { award: 'The Michael Scott Award for Best Dundies Host', k: 'DeAngelo', say: [{ find: 'Best Dundies Host', before: 1 }] },
+      { award: 'The Michael Scott Award for Best Dundies Host', k: 'Deangelo', say: [{ find: 'Best Dundies Host', before: 1 }] },
       { award: 'Doobie Doobie Pothead Stoner of the Year', k: 'Andy', say: [{ find: 'Doobie Doobie Pothead' }, { find: 'actually wanna thank you Michael' }] },
     ],
   },
@@ -373,7 +369,7 @@ function realShelf(D, cer, ci) {
       <h3 class="dr-title"><a href="#/episode/${e.id}">${esc(e.t)}</a></h3>
       <p class="dr-meta">${epCode(e)} · ${fmt.date(e.date)} · <span class="rating">${e.r.toFixed(1)}</span></p>
     </div>
-    <p class="card-sub">${esc(cer.note)} ${cap(nw(cer.awards.length))} Dundies, in the order they’re handed out.</p>
+    <p class="card-sub">${esc(cer.note)}</p>
     <p class="dr-status small muted" data-c="${ci}">Rewinding Michael’s tapes…</p>
     <ol class="dr-list">${cer.awards.map((x, i) => `<li class="dr-item" style="--d:${(i * 0.05).toFixed(2)}s">
       ${trophy(x.pose, 'dr-trophy')}
@@ -387,12 +383,16 @@ function realShelf(D, cer, ci) {
   </div>`;
 }
 
+// NBC spells him Deangelo Vickers; the transcript's speaker tag is DeAngelo. Show the tag the way the prose spells it.
+// (A no-op once build_data.py's alias map sends every variant to Deangelo.)
+const SPELL = { DeAngelo: 'Deangelo' };
+
 function fillReal(app, rows, cer, ci) {
   const mine = rows.filter((r) => r[0] === cer.ep.id);
   const pick = (s) => {
     const f = norm(s.find);
     const r = mine.find((x) => norm(x[2]).includes(f));
-    return r ? scriptLn(r[1], excerpt(r[2], s.find, s.before ?? 0, s.after ?? 0)) : '';
+    return r ? scriptLn(SPELL[r[1]] || r[1], excerpt(r[2], s.find, s.before ?? 0, s.after ?? 0)) : '';
   };
   cer.awards.forEach((x, i) => {
     const el = app.querySelector(`.dr-lines[data-c="${ci}"][data-i="${i}"]`);
@@ -483,7 +483,7 @@ export function dundies(D, lines) {
       <div>
         <p class="eyebrow">The Dundies</p>
         <h1>The Dundies, <em>by transcript.</em></h1>
-        <p class="lede">Michael hands out Dundies every year, whether anyone wants one or not. I went through all ${fmt.int(D.totals.lines)} lines of the fan transcript and gave out ${nw(list.length)} more. No speeches, and still no open bar.</p>
+        <p class="lede">Michael hands out Dundies every year, whether anyone wants one or not. I went through all ${fmt.int(D.totals.lines)} lines of the fan transcript and gave out ${nw(list.length)} more.</p>
         <div class="pills dn-jump"><button type="button" class="pill" data-jump="data-dundies">The Data Dundies</button><button type="button" class="pill" data-jump="the-real-ones">The real ones</button></div>
       </div>
       <div class="dn-hero-art" aria-hidden="true">${trophy('suit', 'dn-trophy dn-trophy-xl')}</div>
@@ -493,17 +493,17 @@ export function dundies(D, lines) {
       <div class="section-head"><div>
         <p class="eyebrow">Part one</p>
         <h2>The Data Dundies</h2>
-        <p class="lede">Counted, not voted. Everyone with a page on this site is eligible. Some awards are counts and some are rates${small ? `, which is how ${esc(small)}, with ${fmt.int(D.char[small].lines)} lines, takes one home` : ''}.</p>
+        <p class="lede">Counted, not voted, among everyone with a page on this site.${small ? ` Some awards are rates, which is how ${esc(small)}, with ${fmt.int(D.char[small].lines)} lines, takes one home.` : ''}</p>
       </div></div>
       <div class="dn-wall">${list.map((a, i) => dundieCard(D, a, i)).join('')}</div>
-      ${hasStage ? '<p class="dn-note">* Stage-direction Dundies count the bracketed notes in the fan transcript, like [sighs] or [on phone], credited to whoever’s line they sit on. A note about someone else, like [Pam laughs] on Jim’s line, doesn’t count. Fans wrote these and didn’t mark every sigh, so read each number as “at least”.</p>' : ''}
+      ${hasStage ? '<p class="dn-note">* Counted from bracketed notes like [sighs] in the fan transcript. Fans didn’t mark every sigh, so read each number as “at least”.</p>' : ''}
     </section>
 
     <section class="section wrap" id="the-real-ones">
       <div class="section-head"><div>
         <p class="eyebrow">Part two</p>
         <h2>The real ones</h2>
-        <p class="lede">The two ceremonies the show films, with each presentation as the transcript has it.${ph && inTwo ? ` “Dundie” is said ${fmt.times(ph.total)} in the whole show, and ${fmt.int(inTwo)} of those are in these two episodes.` : ''}</p>
+        <p class="lede">The two ceremonies the show films.${ph && inTwo ? ` “Dundie” is said ${fmt.times(ph.total)} in the whole show, and ${fmt.int(inTwo)} of those are in these two episodes.` : ''}</p>
       </div></div>
       <div class="grid g2 dr-grid">${REAL.map((c, ci) => realShelf(D, c, ci)).join('')}</div>
     </section>`,
@@ -521,13 +521,19 @@ export function dundies(D, lines) {
         const m = ev.target.closest('.dn-more');
         if (m) {
           const q = m.previousElementSibling;
+          const was = m.getBoundingClientRect().top;
           const open = q.classList.toggle('clamp') === false;
           m.setAttribute('aria-expanded', String(open));
           m.textContent = open ? 'Show less' : 'Keep reading';
+          // Collapsing a 30-line quote pulls the button up past the top of the screen. Scroll by the same amount so it stays put.
+          if (!open) {
+            const d = m.getBoundingClientRect().top - was;
+            if (Math.abs(d) > 1) window.scrollBy({ top: d, behavior: 'instant' });
+          }
         }
       });
       // Arriving from a shared link: make that card glow once it's on screen.
-      const anchor = decodeURIComponent(location.hash).split('@')[1];
+      const anchor = hashAnchor();
       const target = anchor && root.querySelector(`.dn-card[id="${CSS.escape(anchor)}"]`);
       if (target) target.classList.add('dn-target');
 
@@ -565,8 +571,8 @@ const BLURB = {
   'pam-roy': () => 'Engaged since before the cameras showed up. She calls off the wedding.',
   'andy-angela': () => 'He proposes in the season 4 finale. Phyllis says something at Christmas.',
   'ryan-kelly': () => 'On, off, on, off, and in the Finale, gone together.',
-  'erin-pete': (D) => `Plop. Season 9. Not Jim’s brother Pete, from the lunch in ${epT(D, 'Employee Transfer')} and the wedding, who’s kept separate.`,
-  'michael-dwight': () => 'Not a couple, but. The World’s Best Boss and the Assistant to the Regional Manager.',
+  'erin-pete': (D) => `Plop. Season 9. Not Jim’s brother Pete from ${epT(D, 'Employee Transfer')}, who’s kept separate.`,
+  'michael-dwight': () => 'The World’s Best Boss and the Assistant to the Regional Manager.',
 };
 
 function pairColours(c) {
@@ -588,6 +594,16 @@ const inOrder = (D, id) => {
   const e = D.episodes[id];
   return !!e && !e.shuffled;
 };
+// The flagged episodes have one stretch where two scenes trade lines; the rest of the transcript is fine. These runs sit
+// outside that stretch and I read them by hand as one scene in order. Matched by title and opening words, not by count.
+// Dwight Christmas, rows 140-153 of the episode in data/lines/9.json: Pete reads the Die Hard script, Erin reads Andy's
+// email, "No more talking. It's movie time." (The mixed-up rows there are about 36-91 and the tail from 244.)
+const TRUSTED = [
+  { pair: 'erin-pete', t: 'Dwight Christmas', starts: 'Let Heinrich plant the detonators' },
+];
+const trusted = (D, c, r) => TRUSTED.some((x) => x.pair === c.id && D.episodes[r.ep]?.t === x.t
+  && String(r.lines?.[0]?.[1] ?? '').replace(/^["“]/, '').startsWith(x.starts));
+const solid = (D, c, r) => inOrder(D, r.ep) || trusted(D, c, r);
 const nn = (...a) => (a.some((v) => v > 12) ? a.map((v) => fmt.int(v)) : a.map(nw));
 
 // ---------------------------------------------------------------- Couples: charts
@@ -785,23 +801,33 @@ function panelHtml(D, c) {
     if (m === tot) return m === 1 ? `Just once, in season ${ss[0]}.` : `All ${m} in season ${ss[0]}.`;
     return ss.length === 1 ? `Most in season ${ss[0]}, with ${m}.` : `Most in seasons ${join(ss.map(String))}, ${m} each.`;
   };
-  // The longest run from an in-order transcript. Only if a pair has none does a shuffled one stand in, with a warning.
+  // The longest run that can be trusted as one conversation. Only if a pair has none does another stand in, with a warning.
   const runs = c.runs || [];
-  const good = runs.filter((r) => inOrder(D, r.ep));
+  const good = runs.filter((r) => solid(D, c, r));
   const run = good[0] || runs[0];
   const runE = run ? E[run.ep] : null;
   const stitched = !!run && !good.length;
   const hidden = run ? run.n - run.lines.length - (run.end?.length || 0) : 0;
   const rest = runs.filter((r) => r !== run);
   const above = rest.filter((r) => r.n > run.n);
-  const below = rest.filter((r) => r.n <= run.n);
-  const runRef = (r, mark) => `${epA(D, r.ep)} (${r.n}${mark && !inOrder(D, r.ep) ? ', shuffled transcript' : ''})`;
+  // The data keeps each pair's top three runs (build_data.py, pair_runs[:3]), so the third one's length may be shared by
+  // runs past the cut (Jim & Pam have three at 23). Leave that length off, the way the Dundie boards do. A tie with the
+  // longest one is still named: recounted from data/lines, Andy & Erin (18) and Jim & Karen (11) have exactly three each.
+  const cutN = runs.length >= 3 ? runs[runs.length - 1].n : -1;
+  const tied = rest.filter((r) => run && r.n === run.n);
+  const below = rest.filter((r) => run && r.n < run.n && r.n !== cutN);
+  const byN = [];
+  for (const r of below) {
+    const g = byN.find((x) => x.n === r.n);
+    if (g) g.rs.push(r); else byN.push({ n: r.n, rs: [r] });
+  }
   let runNotes = '';
   if (stitched) {
-    runNotes += `<p class="cp-fine">${runs.length > 1 ? `Their ${nw(runs.length)} longest stretches are all in transcripts with the scenes shuffled together: ${join(['this one', ...below.map((r) => runRef(r))])}.` : 'That transcript has its scenes shuffled together.'} So read this as a few scenes run together in transcript order, not one conversation.</p>`;
+    runNotes += '<p class="cp-fine">That transcript has a stretch where two scenes trade lines, so this may be more than one conversation.</p>';
   } else if (run) {
-    if (above.length) runNotes += `<p class="cp-fine">${join(above.map((r) => runRef(r)))} ${above.length > 1 ? 'have longer stretches' : 'has a longer stretch'} on paper, but ${above.length > 1 ? 'those transcripts have' : 'that transcript has'} the scenes shuffled together, so ${above.length > 1 ? 'they don’t' : 'it doesn’t'} count as one conversation.</p>`;
-    if (below.length) runNotes += `<p class="cp-fine">Next longest: ${join(below.map((r) => runRef(r, true)))}.</p>`;
+    if (above.length) runNotes += `<p class="cp-fine">${join(above.map((r) => `${epA(D, r.ep)} (${r.n})`))} ${above.length > 1 ? 'are' : 'is'} longer on paper, but two scenes trade lines in ${above.length > 1 ? 'those transcripts' : 'that transcript'}.</p>`;
+    if (tied.length) runNotes += `<p class="cp-fine">Tied at ${run.n} lines with ${join(tied.map((r) => `${epA(D, r.ep)}${solid(D, c, r) ? '' : ' (mixed-up transcript)'}`))}.</p>`;
+    if (byN.length) runNotes += `<p class="cp-fine">Next longest: ${join(byN.map((g) => `${join(g.rs.map((r) => epA(D, r.ep)))} (${g.n}${g.rs.length > 1 ? ' each' : ''}${g.rs.some((r) => !solid(D, c, r)) ? ', mixed-up transcript' : ''})`))}.</p>`;
   }
   const pages = [c.a, c.b].filter((k) => D.char[k]);
   const missing = [c.a, c.b].filter((k) => !D.char[k]);
@@ -816,8 +842,8 @@ function panelHtml(D, c) {
       </div>
     </div>
     <div class="stats cp-stats rv">
-      <div class="stat"><div class="stat-label">Shared episodes</div><div class="stat-value">${c.shared.length}<small>of ${E.length}</small></div><div class="stat-note">Both of them speak. ${c.clean === c.shared.length ? 'Every one has' : `${fmt.int(c.clean)} of those have`} a clean transcript.</div></div>
-      <div class="stat"><div class="stat-label">Back-and-forths</div><div class="stat-value">${c.clean ? fmt.dec(c.perShared, 1) : '–'}</div><div class="stat-note">${c.clean ? `Per shared episode with a clean transcript. ${fmt.int(c.back)} across those ${fmt.int(c.clean)}.` : 'None of their shared episodes has a clean transcript.'}</div></div>
+      <div class="stat"><div class="stat-label">Shared episodes</div><div class="stat-value">${c.shared.length}<small>of ${E.length}</small></div><div class="stat-note">Both of them speak.</div></div>
+      <div class="stat"><div class="stat-label">Back-and-forths</div><div class="stat-value">${c.clean ? fmt.dec(c.perShared, 1) : '–'}</div><div class="stat-note">${c.clean ? `Per shared episode. ${fmt.int(c.back)} across ${c.clean === c.shared.length ? `all ${fmt.int(c.clean)}` : `the ${fmt.int(c.clean)} with a clean transcript`}.` : 'None of their shared episodes has a clean transcript.'}</div></div>
       <div class="stat"><div class="stat-label">${esc(first(c.a))} says “${esc(first(c.b))}”</div><div class="stat-value">${fmt.int(c.aSays)}</div><div class="stat-note">${peak(c.aSeason)}</div></div>
       <div class="stat"><div class="stat-label">${esc(first(c.b))} says “${esc(first(c.a))}”</div><div class="stat-value">${fmt.int(c.bSays)}</div><div class="stat-note">${peak(c.bSeason)}</div></div>
       <div class="stat"><div class="stat-label">“I love you” lines</div><div class="stat-value cp-ily"><span>${c.ilyA}<small>${esc(c.a)}</small></span><span>${c.ilyB}<small>${esc(c.b)}</small></span></div><div class="stat-note">Said to anyone, over the whole show.</div></div>
@@ -825,7 +851,7 @@ function panelHtml(D, c) {
     <div class="grid g-7-5 mt cp-pair-grid">
       <div class="card rv">
         <h3 class="card-title">Saying each other’s name</h3>
-        <p class="card-sub">${esc(c.a)} says “${esc(first(c.b))}” ${fmt.times(c.aSays)}. ${esc(c.b)} says “${esc(first(c.a))}” ${fmt.times(c.bSays)}. By season, talking to each other or about each other.</p>
+        <p class="card-sub">Talking to each other or about each other, it all counts.</p>
         <div class="legend"><span><i class="sq" style="background:${ca}"></i>${esc(c.a)}, above the line</span><span><i class="sq" style="background:${cb}"></i>${esc(c.b)}, below</span></div>
         <div class="cp-mirror"></div>
         <p class="cp-sr" aria-live="polite" data-live="mirror"></p>
@@ -841,7 +867,7 @@ function panelHtml(D, c) {
       <div class="card-head">
         <div>
           <h3 class="card-title">Every episode, both of them</h3>
-          <p class="card-sub">One cell per episode, in air order. The top half lights up when ${esc(c.a)} speaks, the bottom half when ${esc(c.b)} does. Solid means both.${missing.length ? ` ${join(missing.map(esc))} ${missing.length > 1 ? 'aren’t' : 'isn’t'} one of the ${D.characters.length} people I track episode by episode, so that half only shows up when ${esc(missing.length > 1 ? 'they' : (missing[0] === c.a ? c.b : c.a))} is there too.` : ''}</p>
+          <p class="card-sub">One cell per episode, in air order. Top half ${esc(c.a)}, bottom half ${esc(c.b)}; solid means both.${missing.length ? ` ${join(missing.map(esc))} ${missing.length > 1 ? 'aren’t' : 'isn’t'} one of the ${D.characters.length} people I track episode by episode, so that half only shows up when ${esc(missing.length > 1 ? 'they' : (missing[0] === c.a ? c.b : c.a))} is there too.` : ''}</p>
         </div>
         <p class="cp-tally small">${[`Both: <b>${c.shared.length}</b>`, D.char[c.b] ? `Only ${esc(c.a)}: <b>${onlyA}</b>` : `${esc(c.a)} without ${esc(c.b)}: <b>${onlyA}</b>`, D.char[c.b] && D.char[c.a] ? `Only ${esc(c.b)}: <b>${onlyB}</b>` : ''].filter(Boolean).join(' · ')}</p>
       </div>
@@ -895,12 +921,13 @@ export function couples(D) {
   if (top) {
     const jpTop = top === jp;
     h1 = jpTop ? 'Jim and Pam, <em>as advertised.</em>' : 'The most intense pair <em>isn’t Jim and Pam.</em>';
-    lede = `${esc(top.a)} and ${esc(top.b)} go back and forth ${fmt.dec(top.perShared, 1)} times in an average episode they share.`;
+    lede = `${esc(top.a)} and ${esc(top.b)} go back and forth ${fmt.dec(top.perShared, 1)} times in an average episode they share`;
+    if (md && jp && md.perShared > jp.perShared && md !== top) lede += `; Michael and Dwight, who are not a couple, do ${fmt.dec(md.perShared, 1)}`;
+    lede += '.';
     if (top.clean < 10) {
       const [sh, cl] = nn(top.shared.length, top.clean);
       lede += ` It’s a small sample: they share ${sh} episodes, and only ${cl} of those transcripts are in order.`;
     }
-    if (md && jp && md.perShared > jp.perShared) lede += ` Michael and Dwight, who are not a couple, do ${fmt.dec(md.perShared, 1)}.`;
     const inMost = (c) => `${c.shared.length} of the ${E.length} episodes`;
     if (!jpTop && jp) lede += ` Jim and Pam manage ${fmt.dec(jp.perShared, 1)}${mostShared === jp ? `, but they’re both in ${inMost(jp)}` : ''}.`;
     if (mostShared && (jpTop || mostShared !== jp)) lede += ` ${esc(mostShared.a)} and ${esc(mostShared.b)} are both in ${inMost(mostShared)}.`;
@@ -911,9 +938,6 @@ export function couples(D) {
   const maxSaid = Math.max(1, ...list.map((c) => Math.max(c.aSays, c.bSays)));
   const maxPer = Math.max(1, ...list.map((c) => c.perShared));
   const byPer = [...list].sort((x, y) => y.perShared - x.perShared);
-  // Pairs whose long stretches all sit in shuffled transcripts get a warning on their card; the caveat names them.
-  const stitched = list.filter((c) => c.runs?.length && !c.runs.some((r) => inOrder(D, r.ep)));
-  const michaelIly = list.find((c) => c.a === 'Michael')?.ilyA ?? 0;
 
   const cols = [
     { h: 'Pair', f: (c) => pairName(c) },
@@ -951,7 +975,7 @@ export function couples(D) {
       <div class="grid g2">
         <div class="card rv">
           <h3 class="card-title">Back-and-forths per shared episode</h3>
-          <p class="card-sub">One of them speaks, then the other, straight away. Only episodes with a clean transcript count; the small number is how many that is. Tap a pair to see it.</p>
+          <p class="card-sub">One of them speaks, then the other, straight away. The small number is how many episodes that’s averaged over.</p>
           <div class="cp-rank">${byPer.map((c, i) => `<button type="button" class="cp-row" data-id="${c.id}" style="--d:${(i * 0.04).toFixed(2)}s" aria-label="${esc(`${c.a} and ${c.b}: ${fmt.dec(c.perShared, 1)} per shared episode, over ${fmt.plural(c.clean, 'clean episode')}`)}">
             <span class="cp-rn">${dots(c)}<span>${pairName(c)}</span></span>
             <span class="cp-rt"><span style="width:${((c.perShared / maxPer) * 100).toFixed(1)}%"></span></span>
@@ -960,7 +984,7 @@ export function couples(D) {
         </div>
         <div class="card rv" style="--d:.06s">
           <h3 class="card-title">Who says whose name</h3>
-          <p class="card-sub">The first person’s count on the left, the second person’s on the right. Talking to each other or about each other, it all counts.</p>
+          <p class="card-sub">The first person’s count on the left, the second person’s on the right.</p>
           <div class="cp-fly">${bySaid.map((c, i) => {
             const { ca, cb } = pairColours(c);
             return `<button type="button" class="cp-frow" data-id="${c.id}" style="--d:${(i * 0.04).toFixed(2)}s" aria-label="${esc(`${c.a} says ${c.b} ${fmt.times(c.aSays)}, ${c.b} says ${c.a} ${fmt.times(c.bSays)}`)}">
@@ -972,7 +996,7 @@ export function couples(D) {
         </div>
       </div>
       ${tableView(cols, list)}
-      <p class="cp-caveat">Back-and-forth counts treat each transcript as one conversation, and ${D.totals.shuffled} of the ${E.length} fan transcripts have scenes shuffled together, so those episodes are left out of every back-and-forth number here. The name counts don’t depend on order. The long conversations come from in-order transcripts wherever a pair has one${stitched.length ? `; ${join(stitched.map((c) => `${esc(c.a)} and ${esc(c.b)}`))} only have long stretches in shuffled ones, so ${stitched.length > 1 ? 'theirs come with warnings' : 'theirs comes with a warning'}` : ''}. “I love you” counts every line with the phrase in it, whoever it’s said to, which is how Michael gets to ${michaelIly} no matter who he’s paired with.</p>
+      ${D.totals.shuffled ? `<p class="cp-caveat">${D.totals.shuffled === 1 ? 'One fan transcript has a stretch where two scenes trade lines, so that episode is' : `${cap(nw(D.totals.shuffled))} fan transcripts have a stretch where two scenes trade lines, so those episodes are`} left out of every back-and-forth count.</p>` : ''}
     </section>`,
     after(app) {
       const root = app.firstElementChild || app;
@@ -1030,7 +1054,7 @@ export function couples(D) {
         select(chips[(to + chips.length) % chips.length].dataset.id, { focus: true });
       });
 
-      const anchor = decodeURIComponent(location.hash).split('@')[1];
+      const anchor = hashAnchor();
       select(byId[anchor] ? anchor : sel0.id, { push: false });
       // Back to #/couples@<pair>: the router has just scrolled to the panel; put the reader where they were.
       const y = history.state?.cpY;

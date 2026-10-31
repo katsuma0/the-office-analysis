@@ -594,7 +594,6 @@ details.tv .table-wrap { margin-top: 10px; max-height: 360px; overflow: auto; }
 .palette-input { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .palette-input svg { width: 20px; height: 20px; fill: none; stroke: var(--ink-3); stroke-width: 1.8; }
 .palette-input input { flex: 1; border: 0; background: transparent; font: 400 18px var(--sans); color: var(--ink); outline: none; min-width: 0; }
-.palette-input kbd { font: 500 11px var(--sans); color: var(--ink-3); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
 #palette-list { list-style: none; margin: 0; padding: 6px; max-height: 56vh; overflow: auto; }
 #palette-list li a { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; text-decoration: none; font-size: 14.5px; align-items: center; }
 #palette-list li a small { color: var(--ink-3); font-size: 12px; white-space: nowrap; }
@@ -1934,3 +1933,40 @@ details.tv .table-wrap { overflow-y: auto; }
    component, so it also changes #/episodes and #/findings: merge it once. In dark the .on thumb was
    --surface (#1b1c20) on a --bg-2 (#17181c) track; --line-2 (#3a3b42) separates it. Light is unchanged. */
 /* (toggle contrast: see the pages fixes above) */
+
+/* fan-10: the jump-to palette's close control is a real button now (index.html #palette-close, wired to
+   closePal() in app.js). Where there's a mouse it still looks like the old "esc" keycap; on touch it reads
+   "Close" and is 40px tall. Replaces `.palette-input kbd` (style.css ~597), which nothing uses any more. */
+.pal-close { flex: none; font: 500 11px var(--sans); color: var(--ink-3); background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; line-height: 17px; cursor: pointer; }
+.pal-close:hover { color: var(--ink); border-color: var(--line-2); }
+.pal-close .pc-word { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .pal-close { min-height: 40px; margin: -8px -8px -8px 0; padding: 0 10px; border: 0; border-radius: 8px; font: 600 14px var(--sans); color: var(--accent); }
+  .pal-close .pc-key { display: none; }
+  .pal-close .pc-word { display: inline; }
+}
+
+/* fan-04, palette half: the selected result was --bg-2 on a --surface box, nearly invisible in dark.
+   A blue tint plus an accent bar marks the row Enter will open, in both themes. Must come after
+   `#palette-list li a.sel, #palette-list li a:hover` (style.css ~601), same specificity. */
+#palette-list li a.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+
+/* fan-05: on phones the "who answers whom" names now sit in their own column outside the scroller
+   (charts.js matrix() builds the split and its inline layout). The edge fade goes away once the last
+   column is in view: matrix() toggles .at-end on .matrix-wrap. Extends `.matrix-wrap::after` (style.css ~524). */
+.matrix-wrap::after { transition: opacity .2s; }
+.matrix-wrap.at-end::after { opacity: 0; }
+
+/* sweep-02: the quotable stamp's scale-in (@keyframes tk-stamp, from scale 1.9) grew out from the stamp's centre,
+   so on a 390px phone the right-column stamps poked past the viewport for about half a second and the page
+   scrolled sideways. Growing from the right edge keeps it inside its card. Add to the .tk-stamp block
+   (style.css ~1093). Theme-neutral (no colours). */
+.tk-stamp { transform-origin: right center; }
+
+/* fan-07: "Keep reading" / "Show less" gets a 40px tall hit area. The negative margins keep the text and the gap to
+   the source line where they were (the old button was 26px: 8px padding on top, 2px below). */
+.dn-more { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px 0 0; margin: -4px 0 -10px; }
+
+/* fan-09: .dn-rn clips with overflow:hidden for the ellipsis, which cut the focus ring down to two brackets.
+   Draw the ring inside the link instead. */
+.dn-rn a:focus-visible { outline-offset: -2px; border-radius: 3px; }

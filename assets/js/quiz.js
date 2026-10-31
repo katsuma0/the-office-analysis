@@ -353,7 +353,7 @@ export function quiz(D, quizPool) {
   <section class="wrap page-head qz-top">
     <p class="eyebrow">Quiz night</p>
     <h1 class="qz-swap">${head('who', 'Who said <em>it?</em>')}${head('nte', 'Name that <em>episode.</em>')}</h1>
-    <p class="lede qz-swap">${head('who', 'Five lines from the script, the same five for everyone, new ones at midnight your time. Pick who said each one.')}${head('nte', 'Five words from one episode’s script, the ones it says far more often than the rest of the show. Pick the title.')}</p>
+    <p class="lede qz-swap">${head('who', 'The same five lines for everyone, new ones at midnight your time.')}${head('nte', 'Five words one episode says far more often than the rest of the show, minus the words in its title.')}</p>
   </section>
   <section class="wrap qz-wrap">
     <div class="qz-tabs" role="tablist" aria-label="Games">
@@ -420,9 +420,9 @@ function play(D, quizPool, root) {
     whoBoard.innerHTML = `<div class="card qz-board-card">
       <p class="qz-kicker">${issueName(day)} · ${esc(date)}</p>
       <div class="qz-nums"><div><b>${streak}</b><span>Streak</span></div><div><b>${s.best || 0}</b><span>Best streak</span></div><div><b>${s.played || 0}</b><span>Played</span></div></div>
-      ${s.played ? `<p class="qz-kicker mt">Your scores</p>${hbars(rows, { max: Math.max(1, ...s.dist) })}` : '<p class="qz-board-note">Nothing on the board yet. Your record stays in this browser and nowhere else.</p>'}
+      ${s.played ? `<p class="qz-kicker mt">Your scores</p>${hbars(rows, { max: Math.max(1, ...s.dist) })}` : '<p class="qz-board-note">Nothing yet. Your record stays in this browser.</p>'}
       <p class="qz-board-note qz-cd">New lines in <b data-cd>${untilMidnight()}</b>.</p>
-      ${issueNo(day) < 0 ? `<p class="qz-board-note">Issue #0 goes out on ${esc(new Date(LAUNCH).toLocaleDateString('en-CA', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }))}. Until then these are previews, and they still count toward your streak.</p>` : ''}
+      ${issueNo(day) < 0 ? `<p class="qz-board-note">Issue #0 goes out ${esc(new Date(LAUNCH).toLocaleDateString('en-CA', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }))}. Previews still count toward your streak.</p>` : ''}
     </div>`;
     goes(whoBoard);
   }
@@ -615,8 +615,7 @@ function play(D, quizPool, root) {
     const r = nteRecord();
     nteBoard.innerHTML = `<div class="card qz-board-card">
       <p class="qz-kicker">Name That Episode</p>
-      ${r.played ? `<div class="qz-nums"><div><b>${r.best}<small>/${ROUNDS}</small></b><span>Best</span></div><div><b>${fmt.dec(r.total / r.played, 1)}</b><span>Average</span></div><div><b>${r.played}</b><span>Played</span></div></div>` : '<p class="qz-board-note">No games yet. Your best score shows up here.</p>'}
-      <p class="qz-board-note">Each game draws ten episodes at random, so it’s different every time. Words are each episode’s most distinctive, with the title’s own words taken out.</p>
+      ${r.played ? `<div class="qz-nums"><div><b>${r.best}<small>/${ROUNDS}</small></b><span>Best</span></div><div><b>${fmt.dec(r.total / r.played, 1)}</b><span>Average</span></div><div><b>${r.played}</b><span>Played</span></div></div>` : '<p class="qz-board-note">No games yet.</p>'}
     </div>`;
   }
 
@@ -653,11 +652,10 @@ function play(D, quizPool, root) {
       choices: R.choices.map((id) => `<span class="qz-opt-l">${esc(D.episodes[id].t)}</span>`),
       answer: R.answer,
       rightTag: 'The episode',
-      reveal: (pi, right) => `<div class="qz-ep">
+      reveal: () => `<div class="qz-ep">
           <a class="qz-ep-t" href="#/episode/${e.id}">${esc(e.t)}</a>
           <p class="qz-ep-m"><span>${epCode(e)}</span><span>Aired ${fmt.date(e.date)}</span><span><span class="rating">${fmt.dec(e.r)}</span> on IMDb</span></p>
-        </div>
-        ${right ? '' : `<p class="qz-aside">You picked ${esc(D.episodes[R.choices[pi]].t)}.</p>`}`,
+        </div>`,
       say: () => `It’s ${e.t}, season ${e.s} episode ${e.se}, rated ${fmt.dec(e.r)}.`,
       nextLabel: i < ROUNDS - 1 ? 'Next round' : 'See your Dundie',
       onAnswer(pi, right) {
@@ -734,9 +732,7 @@ function play(D, quizPool, root) {
     const n = P.rows.length;
     const cnt = P.count;
     const top = P.cast[0];
-    const low = P.cast[P.cast.length - 1];
     const lens = P.rows.map((r) => r.t.split(/\s+/).filter(Boolean).length);
-    const tells = P.rows.filter((r) => r.tell).length;
     const selfNamed = P.rows.filter((r) => new RegExp(`\\b${r.k.split(' ')[0]}\\b`, 'i').test(r.t)).length;
     const per = issuesPerDeck(P);
     const firstRepeat = new Date(LAUNCH + per * 864e5).toLocaleDateString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' });
@@ -747,17 +743,17 @@ function play(D, quizPool, root) {
     el.innerHTML = `<div class="grid g2 qz-notes-grid">
       <div class="card">
         <h3 class="card-title">What’s in the filing cabinet</h3>
-        <p class="card-sub">${fmt.int(n)} lines from ${P.cast.length} people, ${Math.min(...lens)} to ${Math.max(...lens)} words each.${selfNamed === 0 ? ' Nobody says their own name, because that would be too easy.' : ''}</p>
+        <p class="card-sub">${fmt.int(n)} lines from ${P.cast.length} people, ${Math.min(...lens)} to ${Math.max(...lens)} words each.${selfNamed === 0 ? ' None has the speaker’s own name in it.' : ''}</p>
         ${hbars(P.cast.map((k) => ({ label: k, v: cnt[k], color: color(k), dot: color(k) })), { href: (r) => (D.charSlug[slug(r.label)] ? `#/character/${slug(r.label)}` : null) })}
-        <p class="qz-note">${tells === n ? 'Every line has' : `${fmt.int(tells)} of them have`} at least one of the speaker’s signature words in it, so there’s always a tell if you know where to look. ${esc(top)} has the most here, ${fmt.int(cnt[top])}, so answering ${esc(top)} every time gets you about one in ${spell(Math.round(n / cnt[top]))}. ${esc(low)} has ${fmt.int(cnt[low])}.</p>
+        <p class="qz-note">Answering ${esc(top)} every time gets you about one in ${spell(Math.round(n / cnt[top]))}.</p>
       </div>
       <div class="card">
         <h3 class="card-title">How it works</h3>
         <div class="qz-prose">
-          <p>Every browser shuffles the ${fmt.int(n)} lines the same way and deals five a day, so everyone playing on the same day gets the same lines in the same order. Nothing goes to a server, and your streak lives in this browser only. No line comes back until the deck runs out, ${fmt.int(per)} days in, on ${esc(firstRepeat)}.</p>
-          <p>The three wrong names are people who also talk in that episode${erinFrom > 1 ? `, so a season ${erinFrom - 1} line won’t offer you Erin, who doesn’t speak until season ${erinFrom}` : ''}. The date shuffles the buttons.</p>
-          <p>Practice mode deals from everything except the next ${AHEAD} issues, ${fmt.int(ahead)} lines, so it can’t give away one you’re about to play.${P.cut ? ` The fan transcript also cuts some lines off at a colon, so I left out the ${fmt.int(P.cut)} that don’t end like a sentence.` : ''}</p>
-          <p>Name That Episode uses each episode’s most distinctive words: the ones it says far more often than the rest of the show does, with the title’s own words taken out. <a href="#/episode/${pilot.id}">The pilot</a> comes out as ${pw.slice(0, -1).join(', ')} and ${pw[pw.length - 1]}.</p>
+          <p>No line comes back until the deck runs out, ${fmt.int(per)} days in, on ${esc(firstRepeat)}.</p>
+          <p>The three wrong names also talk in that episode${erinFrom > 1 ? `, so a season ${erinFrom - 1} line won’t offer you Erin, who doesn’t speak until season ${erinFrom}` : ''}.</p>
+          <p>Practice mode skips the next ${AHEAD} issues, ${fmt.int(ahead)} lines, so it can’t give away one you’re about to play.${P.cut ? ` I left out ${fmt.int(P.cut)} lines the fan transcript cuts off at a colon.` : ''}</p>
+          <p>In Name That Episode, <a href="#/episode/${pilot.id}">the pilot</a> comes out as ${pw.slice(0, -1).join(', ')} and ${pw[pw.length - 1]}.</p>
         </div>
       </div>
     </div>`;

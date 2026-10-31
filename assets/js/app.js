@@ -1,4 +1,4 @@
-import { $, $$, esc, slug, observe, tip } from './ui.js';
+import { $, $$, esc, slug, observe, tip, nav, epCode } from './ui.js';
 import * as P from './pages.js';
 import * as People from './people.js';
 import * as Talk from './talk.js';
@@ -79,36 +79,41 @@ let cleanup = [];
 export function onLeave(fn) { cleanup.push(fn); }
 
 // In-app link clicks go to the top of the new page; Back and Forward restore where the reader was.
+// Code that navigates without a link (charts, the palette) marks its trip with nav.go from ui.js.
 const scrollMemo = new Map();
-let forward = false;
 document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href^="#/"]');
-  if (a && !e.metaKey && !e.ctrlKey && !e.shiftKey) forward = true;
+  if (a && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) nav.mark(a.getAttribute('href'));
 }, true);
 
-function path() {
-  let raw = location.hash.replace(/^#/, '');
+function pathOf(hash) {
+  let raw = hash.replace(/^#/, '');
   try { raw = decodeURIComponent(raw); } catch (e) { /* a stray % in a hand-typed URL */ }
   return raw || '/';
 }
+const path = () => pathOf(location.hash);
 
 let current = null;
-function render() {
+function render(ev) {
   const p = path();
   // "#app" from the skip link, or anything else that isn't a route, isn't a page change.
   if (!p.startsWith('/')) {
     if (!current) { history.replaceState(null, '', '#/'); render(); }
     return;
   }
-  if (current) scrollMemo.set(current, scrollY);
+  // Remember the scroll under the URL being left. A page can rewrite its own URL (the dialogue search does),
+  // so the last path rendered here isn't always it.
+  const left = ev?.oldURL ? pathOf(new URL(ev.oldURL).hash) : current;
+  if (left?.startsWith('/')) scrollMemo.set(left, scrollY);
   const [route, anchor] = p.split('@');
   let hit = null;
-  for (const [re, fn, nav] of routes) {
+  for (const [re, fn, section] of routes) {
     const m = route.match(re);
-    if (m) { hit = { fn, m, nav }; break; }
+    if (m) { hit = { fn, m, nav: section }; break; }
   }
-  const restore = !forward && scrollMemo.has(p) ? scrollMemo.get(p) : null;
-  forward = false;
+  const fwd = nav.to === location.href;
+  nav.to = null;
+  const restore = !fwd && scrollMemo.has(p) ? scrollMemo.get(p) : null;
   current = p;
   const go = () => {
     tip.hide();
@@ -131,9 +136,10 @@ function render() {
       a.classList.toggle('on', on);
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
+    // Back to a page puts the reader where they were, even when its URL has an @anchor; the anchor is for arriving.
     const target = anchor && document.getElementById(anchor);
-    if (target) target.scrollIntoView();
-    else if (restore != null) requestAnimationFrame(() => window.scrollTo({ top: restore, behavior: 'instant' }));
+    if (restore != null) requestAnimationFrame(() => window.scrollTo({ top: restore, behavior: 'instant' }));
+    else if (target) target.scrollIntoView();
     else window.scrollTo({ top: 0, behavior: 'instant' });
     app.focus({ preventScroll: true });
   };
@@ -223,7 +229,7 @@ function index() {
   ];
   D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
   D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}` }));
-  D.episodes.forEach((e) => out.push({ t: e.t, s: `S${e.s} E${e.se}`, h: `#/episode/${e.id}` }));
+  D.episodes.forEach((e) => out.push({ t: e.t, s: epCode(e), h: `#/episode/${e.id}` }));
   Object.values(D.people).forEach((p) => out.push({ t: p.name, s: Object.keys(p.roles).join(' and '), h: `#/person/${p.slug}` }));
   // Match without punctuation so "scotts tots" finds Scott's Tots.
   const n = (s) => s.toLowerCase().replace(/[’'.]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -275,7 +281,13 @@ function closePal(restoreFocus = true) {
   if (restoreFocus) opener?.focus?.();
 }
 $('#open-search').addEventListener('click', openPal);
+$('#palette-close').addEventListener('click', () => closePal());
 pal.addEventListener('click', (e) => { if (e.target === pal) closePal(); });
+// Picking the page already showing fires no hashchange, so close the palette here instead.
+list.addEventListener('click', (e) => {
+  const a = e.target.closest('a');
+  if (a && a.href === location.href) { e.preventDefault(); closePal(); }
+});
 list.addEventListener('pointermove', (e) => {
   const a = e.target.closest('a');
   if (a) select($$('a', list).indexOf(a));
@@ -288,7 +300,7 @@ q.addEventListener('keydown', (e) => {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     const a = $$('a', list)[sel];
-    if (a) { forward = true; location.hash = a.getAttribute('href'); }
+    if (a && !nav.go(a.getAttribute('href'))) closePal();
   } else if (e.key === 'Tab') {
     e.preventDefault(); // the input is the only stop; arrows move through results
   }
@@ -302,7 +314,7 @@ addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------- go
 
 load().then(() => {
-  addEventListener('hashchange', render);
+  addEventListener('hashchange', (ev) => render(ev));
   render();
 }).catch((err) => {
   console.error(err);
