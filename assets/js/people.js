@@ -16,8 +16,12 @@ const callName = (person) => {
 // Correlations with a real minus sign, and never "−0.00".
 const r2 = (r) => (Math.abs(r) < 0.005 ? '0.00' : fmt.num(r));
 const pct = (v) => `${fmt.dec(v, v >= 10 || Number.isInteger(v) ? 0 : 1)}%`;
-const epA = (D, id) => `<a href="#/episode/${id}">${esc(D.episodes[id].t)}</a>`;
-const span = (D, a, b) => (a === b ? D.episodes[a].t : `${D.episodes[a].t} to ${D.episodes[b].t}`);
+// Titles in running text get quotes, the way pages.js does it, so “Goodbye, Michael” doesn't read as two items in a list.
+// epL is the bare link for meta lines where a title stands alone.
+const epL = (D, id) => `<a href="#/episode/${id}">${esc(D.episodes[id].t)}</a>`;
+const epA = (D, id) => `“${epL(D, id)}”`;
+const qt = (t) => `“${t}”`;
+const span = (D, a, b) => (a === b ? qt(D.episodes[a].t) : `${qt(D.episodes[a].t)} to ${qt(D.episodes[b].t)}`);
 const raf2 = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
 const pressed = (btns, on) => btns.forEach((x) => { x.classList.toggle('on', x === on); x.setAttribute('aria-pressed', String(x === on)); });
 // The same normalising the pipeline uses before matching words: lower case, apostrophes dropped, punctuation to spaces.
@@ -90,15 +94,27 @@ function chips(list, max = 14) {
 // counts before anything is drawn, so a rebuilt data file can't leave a note pointing at the wrong gap.
 const NOTES = [
   { k: 'Michael', from: 138, to: 186, label: 'Moves to Colorado with Holly, back for the Finale' },
-  { k: 'Oscar', from: 29, to: 39, max: 1, label: 'Paid “vacation” after Gay Witch Hunt' },
+  // max: 1 lets through the one line he has inside the range; noteSpan() names that episode so the count adds up.
+  { k: 'Oscar', from: 29, to: 39, max: 1, label: 'Paid “vacation” after “Gay Witch Hunt”' },
   { k: 'Holly', from: 91, to: 119, label: 'In Nashua' },
   { k: 'Toby', from: 128, to: 135, label: 'Jury duty, the Scranton Strangler trial' },
   { k: 'Pam', from: 149, to: 152, label: 'Maternity leave' },
   { k: 'Andy', from: 172, to: 178, label: 'Away on the boat' },
-  { k: 'Jim', from: 104, to: 104, label: 'Misses The Banker, a clip show' },
+  { k: 'Jim', from: 104, to: 104, label: 'Misses “The Banker”, a clip show' },
 ];
 const notesFor = (D, keys) => NOTES.filter((n) => keys.includes(n.k) && D.char[n.k] && n.to < D.episodes.length
   && D.episodes.slice(n.from, n.to + 1).every((e) => (e.c[D.char[n.k].code] || 0) <= (n.max || 0)));
+// "“The Convention” to “Traveling Salesmen”, 11 episodes, apart from one line in “A Benihana Christmas”": the
+// exceptions come from the data, so the note can't quietly disagree with the 8-episode absence in the table.
+function noteSpan(D, n) {
+  const len = n.to - n.from + 1;
+  if (len === 1) return epCode(D.episodes[n.from]);
+  const code = D.char[n.k].code;
+  const odd = D.episodes.slice(n.from, n.to + 1).filter((e) => e.c[code]);
+  const lines = odd.reduce((a, e) => a + e.c[code], 0);
+  const but = odd.length ? `, apart from ${lines === 1 ? 'one line' : fmt.plural(lines, 'line')} in ${andList(odd.map((e) => qt(e.t)))}` : '';
+  return `${span(D, n.from, n.to)}, ${len} episodes${but}`;
+}
 
 function sheet(el, D, keys, { rowH = 16, minCell = 4, labels = true, notes = [], marks = [], headH = 18 } = {}) {
   if (!el) return;
@@ -194,9 +210,9 @@ function sheet(el, D, keys, { rowH = 16, minCell = 4, labels = true, notes = [],
 // ---------------------------------------------------------------- all characters
 
 const METRICS = {
-  lines: { label: 'Lines', f: (c) => c.lines, fmt: (v) => fmt.int(v), note: 'Total lines across the show.' },
+  lines: { label: 'Lines', f: (c) => c.lines, fmt: (v) => fmt.int(v), note: '' },
   episodes: { label: 'Episodes', f: (c) => c.episodes, fmt: (v) => fmt.int(v), note: 'Episodes with at least one line.' },
-  wordsPerLine: { label: 'Words per line', f: (c) => c.wordsPerLine, fmt: (v) => fmt.dec(v), note: 'How long they go on once they start.' },
+  wordsPerLine: { label: 'Words per line', f: (c) => c.wordsPerLine, fmt: (v) => fmt.dec(v), note: '' },
   questionPct: { label: 'Questions', f: (c) => c.questionPct, fmt: (v) => fmt.pct(v), note: 'Share of their lines that end in a question mark.' },
   exclaimPct: { label: 'Exclamations', f: (c) => c.exclaimPct, fmt: (v) => fmt.pct(v), note: 'Share of their lines with an exclamation mark.' },
   mentioned: { label: 'Named by others', f: (c) => c.mentioned, fmt: (v) => fmt.int(v), note: 'Times someone else says their first name.' },
@@ -210,11 +226,11 @@ function attendanceFacts(D) {
   else if (all.length > 1) out.push(`${all.map((c) => c.key).join(' and ')} are in all ${N} episodes.`);
   D.byLines.filter((c) => c.episodes === N - 1).forEach((c) => {
     const miss = D.episodes.find((e) => !e.c[c.code]);
-    out.push(`${c.key} missed one, ${miss.t}.`);
+    out.push(`${c.key} missed one, ${qt(miss.t)}.`);
   });
   const m = D.char.Michael;
   if (m?.gap && m.last === N - 1 && m.gap.to === N - 2 && D.episodes.slice(0, m.gap.from).every((e) => e.c[m.code])) {
-    out.push(`Michael is in every episode from the ${D.episodes[0].t} to ${D.episodes[m.gap.from - 1].t}, then just the ${D.episodes[N - 1].t}.`);
+    out.push(`Michael is in every episode from ${qt(D.episodes[0].t)} to ${qt(D.episodes[m.gap.from - 1].t)}, then just ${qt(D.episodes[N - 1].t)}.`);
   }
   return out.join(' ');
 }
@@ -229,20 +245,17 @@ export function characters(D) {
     <section class="wrap page-head">
       <p class="eyebrow">Characters</p>
       <h1>Everyone with <em>a desk.</em></h1>
-      <p class="lede">The ${D.characters.length} people with the most lines, from ${esc(top.key)}'s ${fmt.int(top.lines)} down to ${esc(low.key)}'s ${fmt.int(low.lines)}. Pick one for the full file.</p>
+      <p class="lede">The ${D.characters.length} people with the most lines, from ${esc(top.key)}'s ${fmt.int(top.lines)} down to ${esc(low.key)}'s ${fmt.int(low.lines)}.</p>
     </section>
     <section class="wrap">${badges(D, D.byLines)}</section>
     <section class="section wrap">
       <div class="card rv att-card">
         <h3 class="card-title">The attendance sheet</h3>
-        <p class="card-sub">One row per person, one column per episode in air order. The stronger the colour, the more lines that week, compared with that person's usual. ${esc(attendanceFacts(D))}</p>
+        <p class="card-sub">Every episode in air order, shaded against each person's own usual. ${esc(attendanceFacts(D))}</p>
         <p class="att-hint" aria-hidden="true">${matchMedia('(hover: none)').matches ? 'Swipe' : 'Scroll'} sideways for all ${D.episodes.length} episodes.</p>
         <div id="att"></div>
         <div class="legend att-key mt"><span><i class="sq att-sw0"></i>No lines</span><span><i class="sq" style="background:var(--c-michael);opacity:.22"></i>One line</span><span><i class="sq att-ramp"></i>More lines, stronger colour</span></div>
-        ${notes.length ? `<ol class="att-notes">${notes.map((n, i) => {
-          const len = n.to - n.from + 1;
-          return `<li><button type="button" data-n="${i}"><b class="att-num">${i + 1}</b><span><b>${esc(n.k)}.</b> ${esc(n.label)}. <span class="muted">${len > 1 ? `${esc(span(D, n.from, n.to))}, ${len} episodes` : epCode(D.episodes[n.from])}.</span></span></button></li>`;
-        }).join('')}</ol>` : ''}
+        ${notes.length ? `<ol class="att-notes">${notes.map((n, i) => `<li><button type="button" data-n="${i}"><b class="att-num">${i + 1}</b><span><b>${esc(n.k)}.</b> ${esc(n.label)}. <span class="muted">${esc(noteSpan(D, n))}.</span></span></button></li>`).join('')}</ol>` : ''}
         ${tableView([{ h: 'Character', f: (c) => `<a href="#/character/${slug(c.key)}">${esc(c.key)}</a>` }, { h: 'Episodes', r: 1, f: (c) => fmt.int(c.episodes) }, { h: 'Longest absence', r: 1, f: (c) => fmt.int(longestGaps(D, c)[0]?.n || 0) }, { h: 'When', f: (c) => longestGaps(D, c).map((g) => esc(span(D, g.from, g.to))).join('; ') }], D.byLines)}
       </div>
     </section>
@@ -262,6 +275,7 @@ export function characters(D) {
         if (!box) return;
         title.textContent = M.label;
         note.textContent = M.note;
+        note.hidden = !M.note;
         const rows = [...D.byLines].sort((a, b) => M.f(b) - M.f(a) || a.rank - b.rank).map((c) => ({ label: c.key, v: M.f(c), color: color(c.key), dot: color(c.key), k: c.key }));
         box.innerHTML = hbars(rows, { fmtv: M.fmt, href: (r) => `#/character/${slug(r.k)}` });
         raf2(() => $('#m-bars .hbars')?.classList.add('go'));
@@ -311,27 +325,26 @@ function corrText(D, c) {
   if (r0 == null) return '';
   const { r: rw, n } = withinSeason(D, c);
   const k = c.key;
+  // The scope goes first: the Findings page leaves out the Finale for Michael and gets a different r.
+  const all = `Across all ${fmt.int(c.episodes)} of ${k}'s episodes`;
+  const bit = Math.abs(r0) >= 0.3 ? '' : 'a little ';
   const out = [];
-  if (Math.abs(r0) < 0.1) out.push(`How much ${k} talks in an episode has almost nothing to do with how it rated (r = ${r2(r0)}).`);
-  else if (r0 < 0) out.push(`Episodes where ${k} talks more tended to rate lower (r = ${r2(r0)}).`);
-  else out.push(`Episodes where ${k} talks more tended to rate ${r0 >= 0.3 ? '' : 'a little '}higher (r = ${r2(r0)}).`);
+  if (Math.abs(r0) < 0.1) out.push(`${all}, how much ${k} talks has almost nothing to do with how they rated (r = ${r2(r0)}).`);
+  else out.push(`${all}, the ones where ${k} talks more tended to rate ${bit}${r0 < 0 ? 'lower' : 'higher'} (r = ${r2(r0)}).`);
   const same = Math.sign(rw) === Math.sign(r0);
   const s2 = Math.abs(r0) >= 0.1 && Math.abs(r0 - rw) >= 0.08;
   if (s2) {
-    if (Math.abs(rw) < 0.1) out.push(`Compared only with other episodes from the same season, it nearly disappears (r = ${r2(rw)}), so it's mostly about which seasons ${k} talked most in.`);
-    else if (same && Math.abs(rw) < Math.abs(r0) * 0.7) out.push(`Compared only with other episodes from the same season, it shrinks to ${r2(rw)}, so part of it is which seasons ${k} talked most in.`);
-    else if (same) out.push(`It holds up within seasons too (r = ${r2(rw)}).`);
-    else out.push(`Within a season it flips (r = ${r2(rw)}), which says the seasons were doing all of it.`);
+    if (Math.abs(rw) < 0.1) out.push(`Within each season it nearly disappears (r = ${r2(rw)}), so it's mostly which seasons ${k} talked most in.`);
+    else if (same && Math.abs(rw) < Math.abs(r0) * 0.7) out.push(`Within each season it shrinks to ${r2(rw)}, so part of it is which seasons ${k} talked most in.`);
+    else if (same) out.push(`It holds up within each season too (r = ${r2(rw)}).`);
+    else out.push(`Within each season it flips (r = ${r2(rw)}), so the seasons were doing all of it.`);
   } else if (Math.abs(r0) < 0.1 && Math.abs(rw) >= 0.15) {
-    out.push(`Compared only with episodes from the same season it's ${r2(rw)}, which is still weak.`);
+    out.push(`Within each season it's ${r2(rw)}, still weak.`);
   }
-  if (n < 30) out.push(`That's from ${n} episodes, so take it lightly.`);
-  else if (Math.abs(r0) >= 0.1 && Math.max(Math.abs(r0), Math.abs(rw)) < 0.3) out.push(s2 ? 'Either way, it is weak.' : 'It is a weak relationship.');
+  if (n < 30) out.push("That's not many episodes, so take it lightly.");
   return out.join(' ');
 }
 
-// One sentence about who says this character's name, picked from whichever fact is most surprising.
-// Returns the sentence and whether it already used the self-naming count, so the note under the bars doesn't repeat it.
 // Dundies won and couples, as links to those pages.
 function ribbons(D, c) {
   const won = (D.dundies || []).filter((d) => d.k === c.key);
@@ -339,9 +352,12 @@ function ribbons(D, c) {
   if (!won.length && !pairs.length) return '';
   const dun = won.map((d) => `<a class="ribbon gold" href="#/dundies@${d.id}">${esc(d.award)}</a>`).join('');
   const cps = pairs.map((p) => `<a class="ribbon" href="#/couples@${slug(`${p.a}-${p.b}`)}">${esc(p.a === c.key ? p.b : p.a)}</a>`).join('');
-  return `<div class="ribbons">${won.length ? `<span class="rb-h">${won.length > 1 ? 'Dundies' : 'Dundie'}</span>${dun}` : ''}${pairs.length ? `<span class="rb-h">Couples Discount</span>${cps}` : ''}</div>`;
+  // Each label rides with its own pills, so a wrap on a phone can't leave "Couples Discount" at the end of the Dundie line.
+  return `<div class="ribbons">${won.length ? `<span class="rb-g"><span class="rb-h">${won.length > 1 ? 'Dundies' : 'Dundie'}</span>${dun}</span>` : ''}${pairs.length ? `<span class="rb-g"><span class="rb-h">Couples Discount</span>${cps}</span>` : ''}</div>`;
 }
 
+// One sentence about who says this character's name, picked from whichever fact is most surprising.
+// Returns the sentence and whether it already used the self-naming count, so the note under the bars doesn't repeat it.
 function namePunch(D, c) {
   const nb = c.namedBy || [];
   if (!nb.length) return { t: '', self: false };
@@ -365,6 +381,27 @@ function namePunch(D, c) {
   }
   if (nb[1] && nb[1].n === top.n) return { t: `${top.k} and ${nb[1].k} tie for it, ${fmt.plural(top.n, 'line')} each.`, self: false };
   return { t: `${top.k} says it most, in ${fmt.plural(top.n, 'line')}, ${fmt.pct(top.pct)} of everything ${top.k} says.`, self: false };
+}
+
+// "Carol answers Michael 10.9 times as often as Carol answers anyone else. Donna and Holly, 8.6 times each."
+// Names the top two, anyone tied with them at the shown precision, and anyone the bars tag, so no ×8.6 tag goes unexplained.
+function answerPunch(c, followRows) {
+  const u = c.unusual || [];
+  if (!u.length) return '';
+  const k = c.key;
+  const x = (v) => fmt.dec(v.x);
+  const tagged = new Set(followRows.filter((r) => r.hot).map((r) => r.k));
+  const groups = [];
+  u.filter((v, i) => i < 2 || tagged.has(v.k) || (u[1] && x(v) === x(u[1]))).forEach((v) => {
+    const g = groups[groups.length - 1];
+    if (g && x(g[0]) === x(v)) g.push(v); else groups.push([v]);
+  });
+  const [g0, ...rest] = groups;
+  const names = (g) => andList(g.map((v) => v.k));
+  const lead = g0.length === 1
+    ? `${g0[0].k} answers ${k} ${x(g0[0])} times as often as ${g0[0].k} answers anyone else.`
+    : `${names(g0)} each answer ${k} ${x(g0[0])} times as often as they answer anyone else.`;
+  return rest.length ? `${lead} ${rest.map((g) => `${names(g)}, ${x(g[0])} times${g.length > 1 ? ' each' : ''}`).join('; ')}.` : lead;
 }
 
 // Where the character's own count would land among the people above. Only a count and a rank: the data can't
@@ -405,14 +442,18 @@ function facesCard(D) {
   const E = D.episodes, N = E.length;
   return `<div class="card rv mt faces-card">
     <h3 class="card-title">The many faces of Michael Scott</h3>
-    <p class="card-sub">Alter egos, counted by the lines that name them. Tap one to read them.</p>
+    <p class="card-sub">Alter egos, counted by the lines that name them.</p>
     <div class="faces">${F.map((f, i) => {
       const e = D.episodes[f.first];
       const last = f.eps[f.eps.length - 1];
+      const one = f.eps.length === 1;
+      // A one-episode face already gets its episode in the meta line, so the blurb doesn't need to name it too ("Greek, from The Seminar.").
+      const tail = `, from ${e.t}.`;
+      const blurb = one && f.blurb.endsWith(tail) ? `${f.blurb.slice(0, -tail.length)}.` : f.blurb;
       return `<div class="face${f.eps.length > 1 ? ' wide' : ''}">
         <div class="face-head"><span class="face-n">${esc(f.name)}</span><span class="face-c">${fmt.plural(f.n, 'line')}</span></div>
-        <p class="face-b">${esc(f.blurb)}</p>
-        <p class="face-m">First in ${epA(D, e.id)}, ${epCode(e)}${f.eps.length > 1 ? `, ${monthYear(e.date)}. Last in ${epA(D, last)}, ${epCode(E[last])}, ${monthYear(E[last].date)}. ${f.eps.length} episodes${between(e.date, E[last].date)}` : ''}.</p>
+        <p class="face-b">${esc(blurb)}</p>
+        <p class="face-m">${one ? `In ${epA(D, e.id)}, ${epCode(e)}` : `First in ${epA(D, e.id)}, ${epCode(e)}, ${monthYear(e.date)}. Last in ${epA(D, last)}, ${epCode(E[last])}, ${monthYear(E[last].date)}. ${f.eps.length} episodes${between(e.date, E[last].date)}`}.</p>
         ${f.eps.length > 1 ? `<div class="face-track" aria-hidden="true">${D.seasons.map((s) => `<i class="ft-s" style="left:${(s.first / N) * 100}%"></i>`).join('')}${f.eps.map((id) => `<b style="left:${((id + 0.5) / N) * 100}%" title="${esc(D.episodes[id].t)}"></b>`).join('')}</div>
         <div class="face-ss" aria-hidden="true">${D.seasons.map((s) => `<span style="left:${(((s.first + s.last + 1) / 2) / N) * 100}%">S${s.n}</span>`).join('')}</div>` : ''}
         <button class="btn ghost face-go" type="button" data-i="${i}">Read the lines</button>
@@ -441,11 +482,11 @@ function creedCard(D, c) {
     <div class="blog-bar"><span class="blog-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="blog-url">www.creedthoughts.gov.www/creedthoughts</span></div>
     <div class="blog-body">
       <h3 class="blog-title">Creed Thoughts</h3>
-      <p class="card-sub">The ${th.length} lines of Creed's that lean hardest on words nobody else on the show uses. Each one posted on the day its episode aired.</p>
+      <p class="card-sub">The ${th.length} lines of Creed's that lean hardest on words nobody else on the show uses.</p>
       <div class="creed-index">
         <div><b>${fmt.int(c.lines)}</b><span>lines in ${fmt.int(c.episodes)} episodes, ${fmt.dec(c.lines / c.episodes)} per episode</span></div>
         <div><b>${fmt.int(low)}</b><span>episodes where he says two lines or fewer; exactly one in ${fmt.int(one)}</span></div>
-        ${own ? `<div><b>${fmt.int(own.n)} of ${fmt.int(own.of)}</b><span>lines that say “${esc(showPhrase(D, own.p))}” are Creed's</span></div>` : `<div><b>${fmt.pct(big.pct)}</b><span>of the lines in ${esc(D.episodes[big.id].t)}, his biggest night</span></div>`}
+        ${own ? `<div><b>${fmt.int(own.n)} of ${fmt.int(own.of)}</b><span>lines that say “${esc(showPhrase(D, own.p))}” are Creed's</span></div>` : `<div><b>${fmt.pct(big.pct)}</b><span>of the lines in ${esc(qt(D.episodes[big.id].t))}, his biggest night</span></div>`}
       </div>
       <div class="blog-feed" id="thoughts"></div>
       <button class="btn ghost mt" id="more-thoughts" type="button">Load more thoughts</button>
@@ -475,7 +516,7 @@ function ownedCard(D, c, cc) {
   // A phrase with an apostrophe inside a word ("m m's", from M&M's) was counted on tokens the search can't reproduce
   // (it finds 10 lines where the data says 6), so it would contradict its own link. Leave those out.
   const phr = (c.phrases || []).filter((p) => !p.p.includes("'"));
-  const whole = (o) => (o.n === o.of ? `all ${fmt.plural(o.of, 'time')} it's the whole line` : `${fmt.int(o.n)} of the ${fmt.plural(o.of, 'time')} it's the whole line`);
+  const whole = (o) => (o.n === o.of ? `all ${fmt.int(o.of)} lines that are just this` : `${fmt.int(o.n)} of the ${fmt.int(o.of)} lines that are just this`);
   const lineRows = owned.map((o) => ({ t: o.t, q: `"${o.t}"`, n: o.n, of: o.of, m: whole(o) }));
   const phrRows = phr.map((p) => ({ t: `…${showPhrase(D, p.p)}…`, q: `"${showPhrase(D, p.p)}"`, n: p.n, of: p.of, m: p.n === p.of ? `in all ${fmt.plural(p.of, 'line')} that say it` : `in ${fmt.int(p.n)} of the ${fmt.plural(p.of, 'line')} that say it` }));
   const row = (b, i) => `<a class="own-row" href="#/dialogue/q/${encodeURIComponent(b.q)}" style="--d:${i * 0.06}s">
@@ -483,22 +524,23 @@ function ownedCard(D, c, cc) {
       <span class="own-bar"><span style="width:${(b.n / b.of) * 100}%;background:${cc}"></span></span>
       <span class="own-m">${b.m}</span></a>`;
   if (!lineRows.length && !phrRows.length) {
-    return `<h3 class="card-title">Lines only ${k} says</h3><p class="card-sub">Short lines that are mostly theirs.</p>
+    return `<h3 class="card-title">Lines that are mostly ${k}'s</h3>
       <p class="own-none">No short line ${k} says three times or more is mostly ${k}'s. The words above are the closest thing.</p>`;
   }
-  const tapNote = 'Tap one to search for it. The search also finds longer lines that contain it, so it shows more.';
+  // The one caveat worth keeping: the search finds longer lines too, so its count is bigger than the one here.
+  const tapNote = 'Searching one also finds longer lines that contain it.';
   if (lineRows.length >= 3 || !phrRows.length) {
-    return `<h3 class="card-title">Lines only ${k} says</h3>
-      <p class="card-sub">Short lines that are mostly theirs: when someone says exactly this and nothing else, it's ${k} at least half the time. ${tapNote}</p>
+    return `<h3 class="card-title">Lines that are mostly ${k}'s</h3>
+      <p class="card-sub">When someone says exactly this and nothing else, it's ${k} at least half the time. ${tapNote}</p>
       <div class="own">${lineRows.map(row).join('')}</div>`;
   }
   const both = lineRows.length > 0;
   const rows = [...lineRows, ...phrRows].slice(0, 4);
   const nl = Math.min(lineRows.length, 4);
-  return `<h3 class="card-title">Things only ${k} says</h3>
+  return `<h3 class="card-title">Things that are mostly ${k}'s</h3>
     <p class="card-sub">${both
-    ? `First the short lines that are mostly ${k}'s, then phrases ${k} says far more than their share of the talking would predict.`
-    : `${k}'s short lines are the same as everyone else's, so these are phrases ${k} says far more than their share of the talking would predict.`} Tap one to search the script for it.</p>
+    ? `Whole lines that are ${k}'s at least half the time, and phrases ${k} says far more than their share of the talking would predict.`
+    : `${k}'s short lines are the same as everyone else's, so these are phrases ${k} says far more than their share of the talking would predict.`}</p>
     <div class="own">${both ? '<p class="own-h">The whole line</p>' : ''}${rows.slice(0, nl).map(row).join('')}${both && rows.length > nl ? '<p class="own-h">Inside a longer line</p>' : ''}${rows.slice(nl).map((r, i) => row(r, i + nl)).join('')}</div>`;
 }
 
@@ -534,18 +576,18 @@ export function character(D, key, lines) {
   const firstCard = c.firstLine ? `<div class="fl-card fl-first">
       <span class="fl-tag">First words</span>
       <p class="fl-q">${esc(c.firstLine.t)}</p>
-      <p class="fl-meta">${epA(D, c.firstLine.ep)} · ${epCode(E[c.firstLine.ep])}</p>
-      ${c.firstLine.shuffled ? '<p class="fl-note">That transcript has its scenes shuffled, so this may not be the very first.</p>' : ''}
+      <p class="fl-meta">${epL(D, c.firstLine.ep)} · ${epCode(E[c.firstLine.ep])}</p>
+      ${c.firstLine.shuffled ? '<p class="fl-note">Two scenes trade lines in that transcript, so this may not be the very first.</p>' : ''}
     </div>` : '';
   const lastE = c.lastLine ? E[c.lastLine.ep] : last;
   const lastCard = c.lastLine ? `<div class="fl-card fl-last">
       <span class="fl-tag">Last words</span>
       <p class="fl-q">${esc(c.lastLine.t)}</p>
-      <p class="fl-meta">${epA(D, lastE.id)} · ${epCode(lastE)}</p>
+      <p class="fl-meta">${epL(D, lastE.id)} · ${epCode(lastE)}</p>
     </div>` : `<div class="fl-card fl-last">
       <span class="fl-tag">Last seen</span>
-      <p class="fl-seen">${epA(D, last.id)}<span>${epCode(last)} · ${fmt.plural(last.c[c.code] || 0, 'line')}</span></p>
-      <p class="fl-note">${last.shuffled ? `The ${esc(last.t)} transcript has its scenes shuffled, so I won't guess which line came last.` : 'I could not pin down which line came last.'}</p>
+      <p class="fl-seen">${epL(D, last.id)}<span>${epCode(last)} · ${fmt.plural(last.c[c.code] || 0, 'line')}</span></p>
+      <p class="fl-note">${last.shuffled ? 'Two scenes trade lines in that transcript, so I won\'t guess which line came last.' : 'I could not pin down which line came last.'}</p>
     </div>`;
 
   const unusual = c.unusual || [];
@@ -569,7 +611,7 @@ export function character(D, key, lines) {
           <p class="eyebrow">${c.rank === 1 ? 'Most lines in the show' : `${fmt.ordinal(c.rank)} most lines`}</p>
           <h1 style="font-size:clamp(42px,7vw,88px)">${esc(c.name)}</h1>
           <p class="lede">${esc(c.blurb)}</p>
-          <p class="actor">Played by ${esc(c.actor)}. In ${fmt.plural(c.episodes, 'episode')}, ${first.id === last.id ? `only ${esc(first.t)}` : `from ${esc(first.t)} to ${esc(last.t)}`}.</p>
+          <p class="actor">Played by ${esc(c.actor)}. In ${fmt.plural(c.episodes, 'episode')}, ${first.id === last.id ? `only ${esc(qt(first.t))}` : `from ${esc(span(D, first.id, last.id))}`}.</p>
           ${ribbons(D, c)}
         </div>
       </div>
@@ -578,7 +620,7 @@ export function character(D, key, lines) {
     <section class="wrap">
       <div class="card rv quote-card" style="--cc:${cc}">
         <div class="card-head">
-          <div><h3 class="card-title">${esc(c.key)}, in ${esc(c.key)}'s words</h3><p class="card-sub">A random line from the script. Hit the button for another.</p></div>
+          <div><h3 class="card-title">${esc(c.key)}, in ${esc(c.key)}'s words</h3><p class="card-sub">A random line from the script.</p></div>
           <button class="btn ghost" id="shuffle" type="button">Another one</button>
         </div>
         <p class="quote" id="quote" aria-live="polite"></p>
@@ -592,7 +634,7 @@ export function character(D, key, lines) {
       </div>
       <div class="card rv mt">
         <h3 class="card-title">Every episode, in air order</h3>
-        <p class="card-sub">${fmt.int(c.episodes)} of ${N}. The stronger the colour, the more lines that week.${longest.length ? ` The outlined stretch${longest.length > 1 ? 'es are the longest absences' : ' is the longest absence'}${longest.map(noteFor).filter(Boolean).map((n) => ` (${longest.length > 1 ? 'one is ' : ''}${esc(n.label[0].toLowerCase() + n.label.slice(1))})`).join('')}.` : ''}</p>
+        <p class="card-sub">Stronger colour, more lines.${longest.length ? ` The outlined stretch${longest.length > 1 ? 'es are the longest absences' : ' is the longest absence'}${longest.map(noteFor).filter(Boolean).map((n) => ` (${longest.length > 1 ? 'one is ' : ''}${esc(n.label[0].toLowerCase() + n.label.slice(1))})`).join('')}.` : ''}</p>
         <div id="my-att"></div>
       </div>
     </section>
@@ -615,12 +657,12 @@ export function character(D, key, lines) {
       <div class="grid g2 mt">
         <div class="card rv">
           <h3 class="card-title">Words that are very ${esc(c.key)}</h3>
-          <p class="card-sub">Words ${esc(c.key)} uses far more than everyone else, after adjusting for how much they talk. The small number is how many times. Tap one to search it.</p>
+          <p class="card-sub">Words ${esc(c.key)} uses far more than everyone else, allowing for how much they talk. The small number is times said.</p>
           ${chips(c.signature || [], 14)}
         </div>
         <div class="card rv" style="--d:.06s">
           <h3 class="card-title">Who says “${esc(name)}”</h3>
-          <p class="card-sub">Lines that say the name, by speaker, and how much of that speaker's talking it is.${SHARED_NAMES[c.key] ? ` ${SHARED_NAMES[c.key]}` : ''}</p>
+          <p class="card-sub">Lines that say it, by speaker, and what share of that speaker's lines they are.${SHARED_NAMES[c.key] ? ` ${SHARED_NAMES[c.key]}` : ''}</p>
           ${named.length ? `<p class="punch">${esc(punch.t)}</p>
           ${bars(named.map((r) => ({ label: r.k, v: r.n, color: color(r.k), dot: color(r.k), k: r.k, pct: r.pct })), { wide: true, fmtv: (v, r) => `${fmt.int(v)}<small>${fmt.pct(r.pct)}</small>`, href: (r) => (D.char[r.k] ? `#/character/${slug(r.k)}` : null) })}
           ${c.selfNamed && !punch.self ? `<p class="small muted mt">${esc(selfNote(c))}</p>` : ''}` : '<p class="muted">Nobody says it much.</p>'}
@@ -629,9 +671,9 @@ export function character(D, key, lines) {
       <div class="grid g2 mt">
         <div class="card rv">
           <h3 class="card-title">Who answers ${esc(c.key)}</h3>
-          <p class="card-sub">Who speaks right after ${esc(c.key)}, as a share of all the times anyone does. Only the ${D.matrix?.episodes ?? 'clean'} episodes whose transcript is in order count.${followRows.some((r) => r.hot) ? ` A tag marks someone who answers ${esc(c.key)} far more often than they answer anyone else.` : ''}</p>
+          <p class="card-sub">Who speaks right after ${esc(c.key)}, as a share of all the times anyone does.</p>
           ${followRows.length ? bars(followRows, { fmtv: (v) => fmt.pct(v), href: (r) => (D.char[r.k] ? `#/character/${slug(r.k)}` : null) }) : '<p class="muted">Not enough to go on.</p>'}
-          ${u0 ? `<p class="punch mt">${esc(u0.k)} answers ${esc(c.key)} ${fmt.dec(u0.x)} times as often as ${esc(u0.k)} answers anyone else${unusual[1] ? `. ${esc(unusual[1].k)}, ${fmt.dec(unusual[1].x)} times` : ''}.</p>` : `<p class="small muted mt">Nobody answers ${esc(c.key)} much more than they answer everyone else.</p>`}
+          ${u0 ? `<p class="punch mt">${esc(answerPunch(c, followRows))}</p>` : `<p class="small muted mt">Nobody answers ${esc(c.key)} much more than they answer everyone else.</p>`}
         </div>
         <div class="card rv" style="--d:.06s">
           ${isCreed ? `<h3 class="card-title">Longest single line</h3>${longestBlock(D, c, false)}` : ownedCard(D, c, cc)}
@@ -642,7 +684,7 @@ export function character(D, key, lines) {
       <div class="${isCreed ? '' : 'grid g2 '}mt">
         <div class="card rv">
           <h3 class="card-title">${esc(c.key)}'s biggest episodes</h3>
-          <p class="card-sub">Where they had the largest share of the lines.</p>
+          <p class="card-sub">By share of the episode's lines.</p>
           <div class="big-eps">${hbars(c.bigEpisodes.map((b) => ({ label: E[b.id].t, v: b.pct, color: cc, id: b.id })), { fmtv: (v) => fmt.pct(v), href: (r) => `#/episode/${r.id}` })}</div>
           <p class="small muted mt">${esc(corrText(D, c))}</p>
         </div>
@@ -656,7 +698,15 @@ export function character(D, key, lines) {
     after() {
       // Lines per season: share by default, raw counts on request.
       const cats = D.seasons.map((s) => `S${s.n}`);
-      let mode = 'share';
+      // The compare pick, the Share/Lines mode and Creed's posts shown live in this page's history entry, so Back
+      // from an episode lands on the same chart and the same length of feed the reader left (the router only
+      // restores the scroll offset). A fresh link starts from the defaults.
+      const saved = history.state || {};
+      const save = (patch) => { try { history.replaceState({ ...(history.state || {}), ...patch }, ''); } catch (err) { /* state is a nicety */ } };
+      let mode = saved.pp?.mode === 'raw' ? 'raw' : 'share';
+      if (mode === 'raw') pressed($$('#ps-mode button'), $('#ps-mode [data-m="raw"]'));
+      if (saved.pp?.cmp && D.char[saved.pp.cmp] && saved.pp.cmp !== c.key && $('#cmp')) $('#cmp').value = saved.pp.cmp;
+      const savePP = () => save({ pp: { cmp: $('#cmp')?.value || '', mode } });
       const med = [...D.seasons].map((s) => s.lines).sort((a, b) => a - b)[Math.floor(D.seasons.length / 2)];
       // Lines, not episode counts: the data counts Season 4 as 14 episodes where streaming has 19.
       const shortS = D.seasons.filter((s) => s.lines < med * 0.8);
@@ -672,9 +722,9 @@ export function character(D, key, lines) {
         if (other) series.push({ name: other.key, color: color(other.key) === cc ? 'var(--ink-3)' : color(other.key), values: val(other) });
         $('#cmp-legend').innerHTML = series.length > 1 ? series.map((s) => `<span><i class="sq" style="background:${s.color}"></i>${esc(s.name)}</span>`).join('') : '';
         $('#ps-title').textContent = mode === 'share' ? "Share of each season's lines" : 'Lines per season';
-        $('#ps-sub').textContent = mode === 'share'
-          ? "Out of everything said that season, so a short season doesn't look like a quiet one."
-          : `Raw counts, so short seasons dip whoever you pick: ${short}.`;
+        const sub = $('#ps-sub');
+        sub.textContent = mode === 'share' ? '' : `Short seasons dip for everyone: ${short}.`;
+        sub.hidden = mode === 'share';
         $('#per-season').replaceWith(Object.assign(document.createElement('div'), { id: 'per-season' }));
         columns($('#per-season'), { cats, series, fmtv: mode === 'share' ? pct : fmt.int, href: (it) => `#/season/${it.ci + 1}`, label: `${c.key} by season` });
         requestAnimationFrame(() => $('#per-season')?.classList.add('go'));
@@ -684,13 +734,14 @@ export function character(D, key, lines) {
         const p = peaks[0];
         const sn = peaks.map((i) => i + 1).join(' and ');
         $('#share-note').textContent = mode === 'share'
-          ? `Peak: season ${sn}, with ${fmt.pct(c.perSeasonShare[p])} of everything said that season (${fmt.plural(c.perSeason[p], 'line')}).`
-          : `Most lines: season ${sn}, with ${fmt.int(c.perSeason[p])}. That is ${fmt.pct(c.perSeasonShare[p])} of the season.`;
+          ? `Peak: season ${sn}, with ${fmt.pct(c.perSeasonShare[p])} of the season's lines (${fmt.int(c.perSeason[p])}).`
+          : `Most lines: season ${sn}, with ${fmt.int(c.perSeason[p])}, or ${fmt.pct(c.perSeasonShare[p])} of the season.`;
       };
-      $('#cmp')?.addEventListener('change', drawCmp);
+      $('#cmp')?.addEventListener('change', () => { savePP(); drawCmp(); });
       $$('#ps-mode button').forEach((b) => b.addEventListener('click', () => {
         mode = b.dataset.m;
         pressed($$('#ps-mode button'), b);
+        savePP();
         drawCmp();
       }));
       drawCmp();
@@ -721,8 +772,10 @@ export function character(D, key, lines) {
             if (fromClick) firstNew?.focus({ preventScroll: true });
           }
         };
-        more.addEventListener('click', () => add(true));
+        more.addEventListener('click', () => { add(true); save({ creed: shown }); });
         add(false);
+        const want = Math.min(th.length, +saved.creed || 0);
+        while (shown < want) add(false);
       }
 
       // The faces: the lines load only if someone asks, and only as many seasons as it takes to show four.
@@ -743,7 +796,7 @@ export function character(D, key, lines) {
             done++;
           }
         };
-        const ln = (l) => `<div class="ln"><span class="sp"><i class="dot" style="background:${color(l[1])}"></i>${esc(l[1])}</span><div><div class="tx">${esc(l[2])}</div><div class="meta">${epA(D, l[0])}</div></div></div>`;
+        const ln = (l) => `<div class="ln"><span class="sp"><i class="dot" style="background:${color(l[1])}"></i>${esc(l[1])}</span><div><div class="tx">${esc(l[2])}</div><div class="meta">${epL(D, l[0])}</div></div></div>`;
         b.disabled = true;
         b.textContent = 'Opening the script…';
         try {
@@ -815,16 +868,16 @@ function dotTrack(ids, D, { dom = RAW, val = (e) => e.r, mean, se } = {}) {
 }
 const axis = (dom) => `<span></span><div>${dom.ticks.map((v) => `<span class="${Math.abs(v * 2) % 2 === 1 ? 'minor' : ''}" style="left:${((v - dom.lo) / (dom.hi - dom.lo)) * 100}%">${dom.f(v)}</span>`).join('')}</div><span></span>`;
 
+// How much bigger or smaller a cast member's character's share is in their own episodes, as a whole percentage.
+const ccDiff = (p) => Math.round(Math.abs(p.shareMine / p.shareOther - 1) * 100);
+
+// The strongest case only. The cards below give every person's numbers, so the prose doesn't list them again.
 function castProse(D) {
-  const real = D.castCrew.filter((p) => p.nMine >= 4).map((p) => ({ ...p, ratio: p.shareMine / p.shareOther }))
-    .sort((a, b) => Math.abs(Math.log(b.ratio)) - Math.abs(Math.log(a.ratio)));
-  return real.map((p, i) => {
-    const d = Math.round(Math.abs(p.ratio - 1) * 100);
-    const nums = `(${fmt.pct(p.shareMine)} against ${fmt.pct(p.shareOther)})`;
-    const whose = i ? `${p.char}'s` : `${p.char}'s share of the lines`;
-    if (d <= 10) return `In ${p.person}'s episodes, ${whose} is about the same${d ? `, ${d}% ${p.ratio > 1 ? 'bigger' : 'smaller'}` : ''} ${nums}.`;
-    return `In ${p.person}'s episodes, ${whose} is ${d}% ${p.ratio > 1 ? 'bigger' : 'smaller'} ${nums}.`;
-  }).join(' ');
+  const real = D.castCrew.filter((p) => p.nMine >= 4)
+    .sort((a, b) => Math.abs(Math.log(b.shareMine / b.shareOther)) - Math.abs(Math.log(a.shareMine / a.shareOther)));
+  const p = real[0];
+  if (!p || ccDiff(p) <= 10) return '';
+  return `The biggest gap: in ${p.person}'s episodes, ${p.char}'s share of the lines is ${ccDiff(p)}% ${p.shareMine > p.shareOther ? 'bigger' : 'smaller'} (${fmt.pct(p.shareMine)} against ${fmt.pct(p.shareOther)}).`;
 }
 
 export function crew(D) {
@@ -842,7 +895,7 @@ export function crew(D) {
     <section class="wrap page-head">
       <p class="eyebrow">Behind the camera</p>
       <h1>Who made <em>the good ones.</em></h1>
-      <p class="lede">${D.totals.directors} directors and ${D.totals.writers} writers worked on the show. Some of the writers were also in it. Each dot below is one episode, placed by its rating. The thick tick is that person's average, the thin grey line is the show's (${show.toFixed(2)}).</p>
+      <p class="lede">${D.totals.directors} directors and ${D.totals.writers} writers worked on the show. Each dot below is one episode, placed by its rating; the thick tick is that person's average, the thin grey line the show's (${show.toFixed(2)}).</p>
     </section>
     <section class="wrap">
       <div class="card rv">
@@ -864,21 +917,28 @@ export function crew(D) {
     </section>
     <section class="section wrap">
       <div class="section-head rv"><div><p class="eyebrow">Cast and crew</p><h2>The writers were in it.</h2></div></div>
-      <p class="prose rv">Mindy Kaling, B. J. Novak and Paul Lieberstein were on the writing staff and also played Kelly, Ryan and Toby. Several of the leads directed later on. So I checked whether their own character talks more in the episodes they wrote or directed, counting only episodes the character is in. ${esc(castProse(D))}</p>
+      <p class="prose rv">Mindy Kaling, B. J. Novak and Paul Lieberstein wrote for the show and played Kelly, Ryan and Toby, and several of the leads directed later on. So I checked whether their own character gets more of the lines in the episodes they wrote or directed. ${esc(castProse(D))}</p>
       <div class="grid g4 mt" id="cc"></div>
     </section>
     <section class="wrap">
       <div class="grid g-7-5" style="align-items:start">
         <div class="card rv">
           <h3 class="card-title">Guest directors you might know</h3>
-          <p class="card-sub">Famous names the show brought in, mostly from film. ${ones} of the ${guests.length} directed one episode; ${esc(most.name)} did ${most.eps.length}. Each dot is an episode, the thin grey line is the show's average.</p>
+          <p class="card-sub">${ones} of the ${guests.length} directed one episode; ${esc(most.name)} did ${most.eps.length}.</p>
           <div id="guests"></div>
         </div>
         ${gd.w && gd.d ? `<div class="sticky-note rv" style="--d:.08s">Greg Daniels developed the show, wrote ${gd.w.eps.length} episodes and directed ${gd.d.eps.length}. His written episodes average <b>${gd.w.avg.toFixed(2)}</b>${ten[0] === gd.w ? ', the highest of anyone with ten or more' : ''}.${four[0] === gd.w ? ` Compared with their own seasons they come out ${fmt.signed(gd.w.vs)}, still first.` : ''}</div>` : ''}
       </div>
     </section>`,
     after() {
-      let role = 'directors', sort = 'avg';
+      // Role and sort live in this page's history entry, so Back from a person lands on the same list the reader
+      // left, at the offset the router restores. A fresh link to the page starts from Directors, By average.
+      const saved = history.state?.crew || {};
+      let role = ['directors', 'writers'].includes(saved.role) ? saved.role : 'directors';
+      let sort = ['avg', 'n', 'vs'].includes(saved.sort) ? saved.sort : 'avg';
+      pressed($$('#role button'), $(`#role [data-role="${role}"]`));
+      pressed($$('#sort button'), $(`#sort [data-s="${sort}"]`));
+      const save = () => { try { history.replaceState({ ...(history.state || {}), crew: { role, sort } }, ''); } catch (err) { /* state is a nicety */ } };
       const drawDots = () => {
         const box = $('#dots');
         if (!box) return;
@@ -889,8 +949,8 @@ export function crew(D) {
         // The data rounds both to two places, so ties are real (three writers at +0.01) and share a rank.
         const rAvg = ranks(all, (p) => p.avg), rVs = ranks(all, (p) => p.vs);
         $('#dots-intro').textContent = vs
-          ? `Raw averages mostly rank people by when they worked. This compares each episode with its own season's average instead. The thick tick is the average gap, the whisker shows how sure that is (one standard error), and the middle line is zero. People with at least four episodes; ties share a place.`
-          : `People with at least four episodes. Hover a dot for the episode, click a name for their page.`;
+          ? 'Raw averages mostly rank people by when they worked, so here each episode is measured against its own season. The tick is the average gap, the whisker one standard error, the middle line zero.'
+          : 'People with at least four episodes. Hover or tap a dot for the episode; a name opens their page.';
         $('#dots-axis').innerHTML = axis(vs ? VS : RAW);
         box.innerHTML = rows.map((p, i) => {
           const move = rAvg.get(p) - rVs.get(p);
@@ -908,11 +968,13 @@ export function crew(D) {
       $$('#role button').forEach((b) => b.addEventListener('click', () => {
         role = b.dataset.role;
         pressed($$('#role button'), b);
+        save();
         drawDots();
       }));
       $$('#sort button').forEach((b) => b.addEventListener('click', () => {
         sort = b.dataset.s;
         pressed($$('#sort button'), b);
+        save();
         drawDots();
       }));
       drawDots();
@@ -920,10 +982,10 @@ export function crew(D) {
       $('#cc').innerHTML = D.castCrew.map((p, i) => {
         const what = [p.wrote.length && `wrote ${p.wrote.length}`, p.directed.length && `directed ${p.directed.length}`].filter(Boolean).join(', ');
         const who = callName(p.person);
-        const ratio = p.shareMine / p.shareOther;
+        const d = ccDiff(p), dir = p.shareMine > p.shareOther ? 'bigger' : 'smaller';
         const verdict = p.nMine < 4 ? 'Too few episodes to mean much.'
-          : Math.round(Math.abs(ratio - 1) * 100) <= 10 ? `${esc(p.char)} talks about the same either way.`
-            : ratio > 1 ? `${esc(p.char)} talks more when ${esc(who)} is in charge.` : `${esc(p.char)} talks less when ${esc(who)} is in charge.`;
+          : d <= 10 ? `${esc(p.char)}'s share is about the same either way${d ? `, ${d}% ${dir}` : ''}.`
+            : `${esc(p.char)}'s share is ${d}% ${dir} when ${esc(who)} is in charge.`;
         return `<div class="card cc-card rv" style="--d:${i * 0.04}s;--cc:${color(p.char)}">
           <div class="who"><span class="avatar">${esc(initials(p.person))}</span><div><a href="#/person/${slug(p.person)}" style="font-weight:650;text-decoration:none">${esc(p.person)}</a><div class="small muted">Plays <a href="#/character/${slug(p.char)}">${esc(p.char)}</a> · ${what}</div></div></div>
           <div class="vs">
@@ -1022,7 +1084,7 @@ export function person(D, key) {
     const v = r === 'Director' ? 'directed' : 'wrote';
     return `${i ? v : v[0].toUpperCase() + v.slice(1)} ${fmt.plural(n, 'episode')}`;
   }).join(' and ');
-  const links = best.map((e) => `<a href="#/episode/${e.id}">${esc(e.t)}</a>`);
+  const links = best.map((e) => epA(D, e.id));
   const bestText = eps.length < 2 ? ''
     : best.length === eps.length ? ` ${eps.length === 2 ? 'Both' : `All ${eps.length}`} rate ${topR.toFixed(1)}.`
       : best.length > 1 ? ` The best of them are ${andList(links)}, tied at ${topR.toFixed(1)}.`
@@ -1050,7 +1112,7 @@ export function person(D, key) {
       </div>
     </section>
     <section class="section wrap">
-      ${eps.length > 1 ? `<div class="card rv"><h3 class="card-title">Their episodes, in air order</h3><p class="card-sub">IMDb rating of each one. Hover or tap a lollipop for the episode. Episode numbers use streaming numbering.</p>
+      ${eps.length > 1 ? `<div class="card rv"><h3 class="card-title">Their episodes, in air order</h3><p class="card-sub">IMDb rating of each one. Hover or tap a lollipop for the episode.</p>
         <div class="legend pp-legend"><span><i class="ring" style="background:var(--accent)"></i>${best.length > 1 ? `Best, ${best.length} tied` : 'Best'} (${topR.toFixed(1)})</span><span><i style="background:var(--ink)"></i>Their average (${avg.toFixed(2)})</span><span><i class="pp-dash"></i>The show's average (${D.meta.avg.toFixed(2)})</span></div>
         <div id="pl"></div></div>` : ''}
       <div class="ep-list rv mt">${eps.map(row).join('')}</div>
