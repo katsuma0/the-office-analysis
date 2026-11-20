@@ -221,11 +221,11 @@ let indexCache;
 function index() {
   if (indexCache) return indexCache;
   const out = [
-    { t: 'Home', s: 'Page', h: '#/' }, { t: 'Findings', s: 'Page', h: '#/findings' }, { t: 'Dialogue and search', s: 'Page', h: '#/dialogue' },
+    { t: 'Home', s: 'Page', h: '#/' }, { t: 'Seasons', s: 'Page', h: '#/seasons' }, { t: 'Characters', s: 'Page', h: '#/characters' }, { t: 'Findings', s: 'Page', h: '#/findings' }, { t: 'Dialogue and search', s: 'Page', h: '#/dialogue' },
     { t: 'Directors and writers', s: 'Page', h: '#/crew' }, { t: 'Every episode, ranked', s: 'Page', h: '#/episodes' },
     { t: 'Quiz', s: 'Page', h: '#/quiz' }, { t: 'Who Said It? today', s: 'Daily quiz', h: '#/quiz/daily' },
     ...QUIZ_TYPES.map((q) => ({ t: q.name, s: 'Quiz', h: `#/quiz/${q.id}/easy` })), { t: 'Mixed Bag', s: 'Quiz', h: '#/quiz/mixed/easy' }, { t: 'The Dundies', s: 'Page', h: '#/dundies' },
-    { t: 'Couples Discount', s: 'Page', h: '#/couples' },
+    { t: 'Couples Discount', s: 'Page', h: '#/couples' }, { t: 'The 2023 R version', s: 'My first version, from 2023', h: 'original/2023-report.html' },
   ];
   D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
   D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}` }));
