@@ -44,6 +44,9 @@ export const nav = {
     return nav.to != null;
   },
   go(h) {
+    // A link out of the app (the 2023 report) is a real page, not a hash route.
+    const u = new URL(h, location.href);
+    if (u.pathname !== location.pathname) { location.href = u.href; return true; }
     if (!nav.mark(h)) return false;
     location.hash = new URL(h, location.href).hash;
     return true;
