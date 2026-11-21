@@ -6,6 +6,8 @@ import * as Quiz from './quiz.js';
 import * as Fun from './fun.js';
 import * as Endless from './endless.js';
 import { TYPES as QUIZ_TYPES } from './qgen.js';
+import { PAGES, OLD } from './sitemap.js';
+import { drawNav, markCurrent, sectionBar, tour, toTop, arriveAt } from './wayfinding.js';
 
 const app = $('#app');
 let D;
@@ -56,23 +58,24 @@ export function quizPool() {
 
 // ---------------------------------------------------------------- router
 
+// The last item is the page's key in sitemap.js, which is what lights up in the nav and the menu.
 const routes = [
   [/^\/?$/, () => P.home(D), 'home'],
-  [/^\/seasons$/, () => P.seasons(D), 'season'],
-  [/^\/season\/([1-9])$/, (m) => P.season(D, +m[1]), 'season'],
-  [/^\/episodes$/, () => P.episodes(D), 'season'],
-  [/^\/episode\/(\d+)$/, (m) => P.episode(D, +m[1], lines), 'season'],
-  [/^\/characters$/, () => People.characters(D), 'character'],
-  [/^\/character\/([\w-]+)$/, (m) => People.character(D, m[1], lines), 'character'],
+  [/^\/seasons$/, () => P.seasons(D), 'seasons'],
+  [/^\/season\/([1-9])$/, (m) => P.season(D, +m[1]), 'seasons'],
+  [/^\/episodes$/, () => P.episodes(D), 'episodes'],
+  [/^\/episode\/(\d+)$/, (m) => P.episode(D, +m[1], lines), 'seasons'],
+  [/^\/characters$/, () => People.characters(D), 'characters'],
+  [/^\/character\/([\w-]+)$/, (m) => People.character(D, m[1], lines), 'characters'],
   [/^\/crew$/, () => People.crew(D), 'crew'],
   [/^\/person\/([\w-]+)$/, (m) => People.person(D, m[1]), 'crew'],
   [/^\/dialogue(?:\/q\/(.+))?$/, (m) => Talk.dialogue(D, lines, m[1]), 'dialogue'],
   [/^\/findings$/, () => Talk.findings(D), 'findings'],
   [/^\/quiz$/, () => Endless.hub(D), 'quiz'],
-  [/^\/quiz\/daily$/, () => Quiz.quiz(D, quizPool), 'quiz'],
+  [/^\/quiz\/daily$/, () => Quiz.quiz(D, quizPool), 'daily'],
   [/^\/quiz\/([\w-]+)\/(easy|medium|hard)$/, (m) => Endless.play(D, m[1], m[2]), 'quiz'],
-  [/^\/dundies$/, () => Fun.dundies(D, lines), 'fun'],
-  [/^\/couples$/, () => Fun.couples(D), 'fun'],
+  [/^\/dundies$/, () => Fun.dundies(D, lines), 'dundies'],
+  [/^\/couples$/, () => Fun.couples(D), 'couples'],
 ];
 
 let cleanup = [];
@@ -130,16 +133,14 @@ function render(ev) {
     app.innerHTML = `<div class="page">${page.html}</div>`;
     document.title = page.title ? `${page.title} · The Office, by the numbers` : 'The Office, by the numbers · Katsuma Onishi';
     page.after?.(app);
+    sectionBar(app, route, onLeave);
+    tour(app, route);
     observe(app);
-    $$('.nav a').forEach((a) => {
-      const on = hit?.nav === a.dataset.nav;
-      a.classList.toggle('on', on);
-      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
-    });
+    markCurrent(hit?.nav ?? null, route);
     // Back to a page puts the reader where they were, even when its URL has an @anchor; the anchor is for arriving.
     const target = anchor && document.getElementById(anchor);
     if (restore != null) requestAnimationFrame(() => window.scrollTo({ top: restore, behavior: 'instant' }));
-    else if (target) target.scrollIntoView();
+    else if (target) arriveAt(target, $('.page', app));
     else window.scrollTo({ top: 0, behavior: 'instant' });
     app.focus({ preventScroll: true });
   };
@@ -185,6 +186,9 @@ $('#theme').addEventListener('click', () => {
   paintTheme();
 });
 
+drawNav();
+toTop(app);
+
 const sheet = $('#sheet');
 const sheetBack = $('#sheet-back');
 const menu = $('#menu');
@@ -202,7 +206,8 @@ menu.addEventListener('click', () => {
 sheet.addEventListener('click', closeSheet);
 sheetBack.addEventListener('click', closeSheet);
 $('.top').addEventListener('click', (e) => { if (!sheet.hidden && !e.target.closest('a, button')) closeSheet(); });
-addEventListener('resize', () => { if (!sheet.hidden && innerWidth > 900) closeSheet(); });
+// The menu button only shows while the top nav doesn't fit; once it's gone, so is the menu.
+addEventListener('resize', () => { if (!sheet.hidden && getComputedStyle(menu).display === 'none') closeSheet(); });
 
 let locks = 0;
 function lock() { locks++; document.body.style.overflow = 'hidden'; }
@@ -221,11 +226,10 @@ let indexCache;
 function index() {
   if (indexCache) return indexCache;
   const out = [
-    { t: 'Home', s: 'Page', h: '#/' }, { t: 'Seasons', s: 'Page', h: '#/seasons' }, { t: 'Characters', s: 'Page', h: '#/characters' }, { t: 'Findings', s: 'Page', h: '#/findings' }, { t: 'Dialogue and search', s: 'Page', h: '#/dialogue' },
-    { t: 'Directors and writers', s: 'Page', h: '#/crew' }, { t: 'Every episode, ranked', s: 'Page', h: '#/episodes' },
-    { t: 'Quiz', s: 'Page', h: '#/quiz' }, { t: 'Who Said It? today', s: 'Daily quiz', h: '#/quiz/daily' },
-    ...QUIZ_TYPES.map((q) => ({ t: q.name, s: 'Quiz', h: `#/quiz/${q.id}/easy` })), { t: 'Mixed Bag', s: 'Quiz', h: '#/quiz/mixed/easy' }, { t: 'The Dundies', s: 'Page', h: '#/dundies' },
-    { t: 'Couples Discount', s: 'Page', h: '#/couples' }, { t: 'The 2023 R version', s: 'My first version, from 2023', h: 'original/2023-report.html' },
+    { t: 'Home', s: 'Page', h: '#/' },
+    ...PAGES.map((p) => ({ t: p.name, s: 'Page', h: p.h })),
+    ...QUIZ_TYPES.map((q) => ({ t: q.name, s: 'Quiz', h: `#/quiz/${q.id}/easy` })), { t: 'Mixed Bag', s: 'Quiz', h: '#/quiz/mixed/easy' },
+    { t: OLD.name, s: 'My first version, from 2023', h: OLD.h },
   ];
   D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
   D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}` }));
@@ -250,6 +254,9 @@ function draw() {
       else if (i.ns.includes(term)) scored.push([3, 0, i]);
     }
     items = scored.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2].t.length - b[2].t.length).slice(0, 40).map((x) => x[2]);
+    // Names are one search and the script is another. This row hands whatever was typed to the second.
+    const typed = q.value.trim();
+    if (typed.length >= 2) items.push({ t: `Search every line for “${typed}”`, s: 'Dialogue', h: `#/dialogue/q/${encodeURIComponent(typed)}` });
   }
   sel = 0;
   list.innerHTML = items.length
