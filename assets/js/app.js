@@ -6,8 +6,8 @@ import * as Quiz from './quiz.js';
 import * as Fun from './fun.js';
 import * as Endless from './endless.js';
 import { TYPES as QUIZ_TYPES } from './qgen.js';
-import { PAGES, OLD } from './sitemap.js';
-import { drawNav, markCurrent, sectionBar, tour, toTop, arriveAt } from './wayfinding.js';
+import { PAGES, SPOTS, OLD } from './sitemap.js';
+import { drawNav, markCurrent, sectionBar, tour, toTop, arriveAt, steadyBars } from './wayfinding.js';
 
 const app = $('#app');
 let D;
@@ -97,6 +97,7 @@ function pathOf(hash) {
 const path = () => pathOf(location.hash);
 
 let current = null;
+let shown = null; // the route of the page on screen, without any @anchor
 function render(ev) {
   const p = path();
   // "#app" from the skip link, or anything else that isn't a route, isn't a page change.
@@ -117,7 +118,24 @@ function render(ev) {
   const fwd = nav.to === location.href;
   nav.to = null;
   const restore = !fwd && scrollMemo.has(p) ? scrollMemo.get(p) : null;
+  closeSheet();
+  closePal(false);
+  // A link to a marked spot on the page already showing (an award from the Dundies index, "Findings" in the menu
+  // while halfway down Findings) is a jump, not a page change: move there and leave the page as it is. Only
+  // spots a page marked with data-sec or data-jump count; any other @anchor is that page's own business.
+  const spot = (a) => (a ? document.getElementById(a) : null);
+  const marked = (a) => !a || !!spot(a)?.matches('[data-sec], [data-jump]');
+  const [leftRoute, leftAnchor] = (left || '').split('@');
+  if (shown === route && leftRoute === route && (anchor || leftAnchor) && marked(anchor) && marked(leftAnchor)) {
+    current = p;
+    const smooth = fwd && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant';
+    if (restore != null) window.scrollTo({ top: restore, behavior: 'instant' });
+    else if (anchor) spot(anchor).scrollIntoView({ behavior: smooth, block: 'start' });
+    else window.scrollTo({ top: 0, behavior: smooth });
+    return;
+  }
   current = p;
+  shown = route;
   const go = () => {
     tip.hide();
     cleanup.forEach((fn) => { try { fn(); } catch (e) { /* page already gone */ } });
@@ -142,10 +160,10 @@ function render(ev) {
     if (restore != null) requestAnimationFrame(() => window.scrollTo({ top: restore, behavior: 'instant' }));
     else if (target) arriveAt(target, $('.page', app));
     else window.scrollTo({ top: 0, behavior: 'instant' });
-    app.focus({ preventScroll: true });
+    // On a page change focus goes to the new page. On first load it stays put, so Tab starts at the skip link
+    // and the nav like on any other site.
+    if (app.dataset.ready) app.focus({ preventScroll: true });
   };
-  closeSheet();
-  closePal(false);
   if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches && app.dataset.ready) {
     const vt = document.startViewTransition(go);
     vt.ready.catch(() => {});
@@ -188,6 +206,7 @@ $('#theme').addEventListener('click', () => {
 
 drawNav();
 toTop(app);
+steadyBars();
 
 const sheet = $('#sheet');
 const sheetBack = $('#sheet-back');
@@ -205,6 +224,12 @@ menu.addEventListener('click', () => {
 // real element with its own listener rather than a catch-all on the document.
 sheet.addEventListener('click', closeSheet);
 sheetBack.addEventListener('click', closeSheet);
+// A link to the page already showing changes nothing in the address, so nothing would happen. In the nav, the
+// menu and the logo it means "take me back to the top".
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('.nav a, #sheet a, .brand');
+  if (a && a.getAttribute('href') === (location.hash || '#/')) window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+});
 $('.top').addEventListener('click', (e) => { if (!sheet.hidden && !e.target.closest('a, button')) closeSheet(); });
 // The menu button only shows while the top nav doesn't fit; once it's gone, so is the menu.
 addEventListener('resize', () => { if (!sheet.hidden && getComputedStyle(menu).display === 'none') closeSheet(); });
@@ -225,35 +250,51 @@ let indexCache;
 
 function index() {
   if (indexCache) return indexCache;
+  // pri breaks ties between kinds: a page beats the episode it's named after ("The Dundies"), which beats a person.
+  // k is other words someone might type for it; a quiz entry's link is filled in at draw time (see quizLevel).
   const out = [
-    { t: 'Home', s: 'Page', h: '#/' },
-    ...PAGES.map((p) => ({ t: p.name, s: 'Page', h: p.h })),
-    ...QUIZ_TYPES.map((q) => ({ t: q.name, s: 'Quiz', h: `#/quiz/${q.id}/easy` })), { t: 'Mixed Bag', s: 'Quiz', h: '#/quiz/mixed/easy' },
-    { t: OLD.name, s: 'My first version, from 2023', h: OLD.h },
+    { t: 'Home', s: 'Page', h: '#/', pri: 0 },
+    ...PAGES.map((p) => ({ t: p.name, s: 'Page', h: p.h, k: p.k, pri: 0 })),
+    ...SPOTS.map((x) => ({ ...x, pri: 1 })),
+    ...(D.dundies || []).map((d) => ({ t: d.award, s: 'Dundie', h: `#/dundies@${d.id}`, k: `${d.k} dundie award`, pri: 1 })),
+    ...(D.couples || []).map((c) => ({ t: `${c.a} & ${c.b}`, s: 'Couples Discount', h: `#/couples@${slug(`${c.a}-${c.b}`)}`, k: `${c.a} and ${c.b}|${c.b} and ${c.a}|${c.b} ${c.a}`, pri: 1 })),
+    ...QUIZ_TYPES.map((q) => ({ t: q.name, s: 'Quiz game', quiz: q.id, k: 'game play', pri: 2 })), { t: 'Mixed Bag', s: 'Quiz game', quiz: 'mixed', k: 'game play', pri: 2 },
+    { t: OLD.name, s: 'My first version, from 2023', h: OLD.h, k: 'old original first r report', pri: 2 },
   ];
-  D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}` }));
-  D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}` }));
-  D.episodes.forEach((e) => out.push({ t: e.t, s: epCode(e), h: `#/episode/${e.id}` }));
-  Object.values(D.people).forEach((p) => out.push({ t: p.name, s: Object.keys(p.roles).join(' and '), h: `#/person/${p.slug}` }));
-  // Match without punctuation so "scotts tots" finds Scott's Tots.
+  D.seasons.forEach((s) => out.push({ t: `Season ${s.n}`, s: s.year === s.endYear ? `${s.year}` : `${s.year} to ${s.endYear}`, h: `#/season/${s.n}`, pri: 2 }));
+  D.characters.forEach((c) => out.push({ t: c.name, s: 'Character', h: `#/character/${slug(c.key)}`, k: c.actor, pri: 2 }));
+  D.episodes.forEach((e) => out.push({ t: e.t, s: `Episode · ${epCode(e)}`, h: `#/episode/${e.id}`, pri: 3 }));
+  Object.values(D.people).forEach((p) => out.push({ t: p.name, s: Object.keys(p.roles).join(' and '), h: `#/person/${p.slug}`, pri: 4 }));
+  // Match without punctuation so "scotts tots" finds Scott's Tots, and without a leading "the" so "dund" finds
+  // The Dundies as fast as Dunder Mifflin Infinity.
   const n = (s) => s.toLowerCase().replace(/[’'.]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-  out.forEach((i) => { i.nt = n(i.t); i.ns = n(i.s); });
+  out.forEach((i) => { i.nt = n(i.t).replace(/^the /, ''); i.ns = n(i.s); i.nk = (i.k || '').split('|').flatMap((x) => [n(x), ...n(x).split(' ')]).filter(Boolean); });
   indexCache = { out, n };
   return indexCache;
 }
 
+// A quiz game found by search opens at the difficulty last played, not always on easy.
+function quizLevel() {
+  try { const l = JSON.parse(localStorage.getItem('quiz-ledger') || 'null')?.level; if (['easy', 'medium', 'hard'].includes(l)) return l; } catch (e) { /* private mode */ }
+  return 'easy';
+}
+
 function draw() {
   const { out, n } = index();
-  const term = n(q.value);
-  if (!term) items = out.slice(0, 14);
+  const term = n(q.value).replace(/^the (?=.)/, '');
+  // With nothing typed, the list is the menu: every page, in the menu's order.
+  if (!term) items = out.slice(0, 1 + PAGES.length);
   else {
     const scored = [];
     for (const i of out) {
       const at = i.nt.indexOf(term);
       if (at >= 0) scored.push([at === 0 ? 0 : i.nt.includes(` ${term}`) ? 1 : 2, at, i]);
+      else if (i.nk.some((w) => w.startsWith(term))) scored.push([1, 0, i]);
       else if (i.ns.includes(term)) scored.push([3, 0, i]);
     }
-    items = scored.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2].t.length - b[2].t.length).slice(0, 40).map((x) => x[2]);
+    const lv = quizLevel();
+    items = scored.sort((a, b) => a[0] - b[0] || a[2].pri - b[2].pri || a[1] - b[1] || a[2].t.length - b[2].t.length).slice(0, 40)
+      .map((x) => (x[2].quiz ? { ...x[2], h: `#/quiz/${x[2].quiz}/${lv}` } : x[2]));
     // Names are one search and the script is another. This row hands whatever was typed to the second.
     const typed = q.value.trim();
     if (typed.length >= 2) items.push({ t: `Search every line for “${typed}”`, s: 'Dialogue', h: `#/dialogue/q/${encodeURIComponent(typed)}` });
@@ -278,15 +319,19 @@ function openPal() {
   opener = document.activeElement;
   pal.hidden = false;
   q.value = '';
+  // The long hint is cut off mid-word in a phone's narrow box.
+  q.placeholder = innerWidth < 520 ? 'Search the site' : 'Episode, character, page, or any word…';
   draw();
-  q.focus();
   lock();
+  // preventScroll: the box is fixed to the screen, but focusing it still dragged the page half a screen up.
+  q.focus({ preventScroll: true });
 }
 function closePal(restoreFocus = true) {
   if (pal.hidden) return;
   pal.hidden = true;
   unlock();
-  if (restoreFocus) opener?.focus?.();
+  // Without preventScroll the browser scrolls to where the sticky header's button "really" is, half a screen up.
+  if (restoreFocus) opener?.focus?.({ preventScroll: true });
 }
 $('#open-search').addEventListener('click', openPal);
 $('#palette-close').addEventListener('click', () => closePal());
@@ -310,9 +355,11 @@ q.addEventListener('keydown', (e) => {
     const a = $$('a', list)[sel];
     if (a && !nav.go(a.getAttribute('href'))) closePal();
   } else if (e.key === 'Tab') {
-    e.preventDefault(); // the input is the only stop; arrows move through results
+    e.preventDefault(); // two stops, this box and Close; the arrows move through the results
+    $('#palette-close').focus();
   }
 });
+$('#palette-close').addEventListener('keydown', (e) => { if (e.key === 'Tab') { e.preventDefault(); q.focus(); } });
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { if (!pal.hidden) closePal(); else if (!sheet.hidden) { closeSheet(); menu.focus(); } }
   const typing = /input|textarea|select/i.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;

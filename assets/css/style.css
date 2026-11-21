@@ -303,7 +303,8 @@ h1 em, h2 em { font-style: italic; font-weight: 400; color: var(--accent); }
 /* ---------------------------------------------------------------- season cards */
 
 .season-rail { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 10px; }
-@media (max-width: 1100px) { .season-rail { grid-template-columns: repeat(9, 200px); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--pad); padding: 4px var(--pad) 18px; margin: 0 calc(-1 * var(--pad)); scrollbar-width: none; } .season-rail::-webkit-scrollbar { display: none; } .season-card { scroll-snap-align: start; } }
+@media (max-width: 1100px) and (hover: hover) and (pointer: fine) { .season-rail { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 700px), (max-width: 1100px) and (hover: none), (max-width: 1100px) and (pointer: coarse) { .season-rail { grid-template-columns: repeat(9, 200px); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--pad); padding: 4px var(--pad) 18px; margin: 0 calc(-1 * var(--pad)); scrollbar-width: none; } .season-rail::-webkit-scrollbar { display: none; } .season-card { scroll-snap-align: start; } }
 .season-card {
   position: relative; display: flex; flex-direction: column; text-decoration: none; min-height: 250px;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 16px 14px; overflow: hidden;
@@ -2002,3 +2003,15 @@ details.tv .table-wrap { overflow-y: auto; }
 .to-top:hover { transform: translateY(-2px); border-color: var(--ink-3); }
 .to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media print { .to-top, .secbar, .tour { display: none; } }
+
+/* The big season numeral's box hangs over the breadcrumb above it and was swallowing its taps. */
+.season-hero .giant { pointer-events: none; }
+.crumbs { position: relative; z-index: 1; }
+/* Breadcrumbs keep their size but take a thumb: 21px of text in a 44px tap area. */
+.crumbs a { display: inline-block; padding: 12px 6px; margin: -12px -6px; }
+
+/* The header is fixed, not sticky. Focusing anything inside a sticky box makes the browser scroll that box "into
+   view" past the page's scroll-padding, which dragged a scrolled page up half a screen whenever search or the
+   menu was tapped. A fixed box is never scrolled to. 63px is the header's height, used by the bars under it too. */
+.top { position: fixed; inset: 0 0 auto 0; }
+body { padding-top: 63px; }
