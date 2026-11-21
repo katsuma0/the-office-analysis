@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>An Analysis of The Office (US), 2023 · Katsuma Onishi</title>
+  <meta name="description" content="My first data project, from 2023, kept as it was.">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <style>
+    /* 2023-report.html is the report exactly as I published it in 2023, and it has no way back to the site.
+       This page shows it in a frame under one bar that does, so the report's own file stays untouched. */
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; flex-direction: column; background: #f6f4ef; color: #17181c; font: 500 14px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); min-height: 48px; border-bottom: 1px solid #dcd8cc; }
+    .bar span { color: #686a71; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar a { flex: none; display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-weight: 650; text-underline-offset: 3px; }
+    iframe { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #121316; color: #f1efe9; }
+      .bar { border-color: #2a2b31; }
+      .bar span { color: #9a9ca3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar"><span>The 2023 version, as I left it</span><a href="../">Back to the new one</a></div>
+  <iframe id="report" src="2023-report.html" title="An Analysis of The Office (US), the 2023 report"></iframe>
+  <noscript><p style="padding:16px"><a href="2023-report.html">Open the 2023 report</a></p></noscript>
+  <script>
+    // Links out of the report (Kaggle, Wikipedia) would otherwise load inside the frame, and most sites refuse
+    // to be framed. Send those to a new tab; links within the report keep working as they did.
+    document.getElementById('report').addEventListener('load', (e) => {
+      try {
+        const doc = e.target.contentDocument;
+        doc.querySelectorAll('a[href]').forEach((a) => {
+          if (a.host && a.host !== location.host) { a.target = '_blank'; a.rel = 'noopener'; }
+        });
+      } catch (err) { /* opened from disk: the browser keeps the two files apart, and the links behave as before */ }
+    });
+  </script>
+</body>
+</html>

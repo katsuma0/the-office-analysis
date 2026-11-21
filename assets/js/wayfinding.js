@@ -133,6 +133,23 @@ export function tour(app, route) {
   $('.page', app).append(nav);
 }
 
+// ---------------------------------------------------------------- sticky bars and focus
+
+// A pill in a sticky bar is always on screen, but tabbing onto one makes the browser "scroll it into view" past
+// the page's scroll-padding, and the page lurches up most of a screen. Put it back. (A tap or a click doesn't
+// do this; only focus from the keyboard or from code scrolls.)
+export function steadyBars() {
+  let y = 0;
+  let at = -1e9;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Tab') { y = scrollY; at = performance.now(); } }, true);
+  document.addEventListener('focusin', (e) => {
+    if (performance.now() - at > 100 || !e.target.closest?.('.subnav')) return;
+    const back = () => { if (Math.abs(scrollY - y) > 1) window.scrollTo({ top: y, behavior: 'instant' }); };
+    back();
+    requestAnimationFrame(back);
+  });
+}
+
 // ---------------------------------------------------------------- back to top
 
 export function toTop(app) {
