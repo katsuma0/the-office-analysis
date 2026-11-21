@@ -27,6 +27,8 @@
   <link rel="modulepreload" href="assets/js/talk.js">
   <link rel="modulepreload" href="assets/js/quiz.js">
   <link rel="modulepreload" href="assets/js/fun.js">
+  <link rel="modulepreload" href="assets/js/sitemap.js">
+  <link rel="modulepreload" href="assets/js/wayfinding.js">
   <link rel="modulepreload" href="assets/js/endless.js">
   <link rel="modulepreload" href="assets/js/qgen.js">
   <link rel="preload" href="data/office.json" as="fetch" crossorigin="anonymous">
@@ -45,13 +47,11 @@
         <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="5" width="26" height="22" rx="3"/><path d="M8 21V13M13 21V9M18 21v-6M23 21V11"/></svg>
         <span class="brand-text"><b>The Office</b><i>by the numbers</i></span>
       </a>
+      <!-- Drawn again from assets/js/sitemap.js as soon as the script runs; this copy is what shows until then. -->
       <nav class="nav" aria-label="Main">
-        <a href="#/seasons" data-nav="season">Seasons</a>
-        <a href="#/characters" data-nav="character">Characters</a>
-        <a href="#/crew" data-nav="crew">Crew</a>
-        <a href="#/dialogue" data-nav="dialogue">Dialogue</a>
-        <a href="#/findings" data-nav="findings">Findings</a>
-        <a href="#/quiz" data-nav="quiz" class="nav-play">Play</a>
+        <span class="nav-g"><a href="#/seasons" data-nav="seasons">Seasons</a><a href="#/episodes" data-nav="episodes">Episodes</a><a href="#/characters" data-nav="characters">Characters</a><a href="#/crew" data-nav="crew">Crew</a></span>
+        <span class="nav-g"><a href="#/findings" data-nav="findings">Findings</a><a href="#/dialogue" data-nav="dialogue">Dialogue</a><a href="#/couples" data-nav="couples">Couples</a><a href="#/dundies" data-nav="dundies">Dundies</a></span>
+        <span class="nav-g"><a href="#/quiz" data-nav="quiz" class="nav-play">Play</a></span>
       </nav>
       <div class="top-actions">
         <button class="icon-btn" id="open-search" aria-label="Jump to anything" title="Jump to anything (/)">
@@ -70,21 +70,8 @@
   </header>
 
   <div class="sheet-back" id="sheet-back" hidden></div>
-  <div class="sheet" id="sheet" hidden>
-    <nav aria-label="Main, mobile">
-      <a href="#/">Home</a>
-      <a href="#/seasons">Seasons</a>
-      <a href="#/episodes">Every episode, ranked</a>
-      <a href="#/characters">Characters</a>
-      <a href="#/crew">Directors &amp; writers</a>
-      <a href="#/dialogue">Dialogue</a>
-      <a href="#/findings">Findings</a>
-      <a href="#/quiz">Quiz</a>
-      <a href="#/dundies">The Dundies</a>
-      <a href="#/couples">Couples Discount</a>
-    </nav>
-    <a class="sheet-old" href="original/2023-report.html">The 2023 R version</a>
-  </div>
+  <!-- The phone menu. Its links are drawn from assets/js/sitemap.js. -->
+  <div class="sheet" id="sheet" hidden></div>
 
   <main id="app" tabindex="-1">
     <div class="boot">
@@ -106,7 +93,7 @@
     <div class="palette-box" role="dialog" aria-modal="true" aria-label="Jump to">
       <div class="palette-input">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
-        <input id="palette-q" type="search" placeholder="Episode, character, season, director…" autocomplete="off" spellcheck="false" aria-label="Jump to an episode, character, season or person" role="combobox" aria-controls="palette-list" aria-expanded="true">
+        <input id="palette-q" type="search" placeholder="Episode, character, page, or any word…" autocomplete="off" spellcheck="false" aria-label="Jump to an episode, character, season or person" role="combobox" aria-controls="palette-list" aria-expanded="true">
         <button type="button" class="pal-close" id="palette-close" aria-label="Close"><span class="pc-key">esc</span><span class="pc-word">Close</span></button>
       </div>
       <ul id="palette-list" role="listbox"></ul>

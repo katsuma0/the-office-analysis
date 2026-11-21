@@ -406,7 +406,7 @@ export function dialogue(D, lines, term) {
       <h1>Every line, <em>searchable.</em></h1>
       <p class="lede">All ${fmt.int(D.totals.lines)} lines, ${fmt.int(D.totals.vocab)} different words. Punctuation doesn’t count, so “scotts tots” finds Scott’s Tots.</p>
     </section>
-    <section class="wrap">
+    <section class="wrap" id="search" data-sec="Search">
       <form class="searchbox rv" role="search" id="sform">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
         <input id="sq" type="search" enterkeyhint="search" placeholder="Try “beets” or “bankruptcy”" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search the script">
@@ -416,25 +416,25 @@ export function dialogue(D, lines, term) {
       <div id="sres" class="mt"></div>
     </section>
 
-    <section class="section wrap" id="quotables">
+    <section class="section wrap" id="quotables" data-sec="Quotables">
       <div class="section-head rv"><div><p class="eyebrow">Quotables</p><h2>The lines you quote most, <em>the script says least.</em></h2></div>
         <p class="small muted tk-head-note">Counted in the fan transcript. Tap a card to see it in context.</p></div>
       <div class="tk-wall">${quoteWall(D)}</div>
     </section>
 
-    <section class="section wrap" id="jokes">
+    <section class="section wrap" id="jokes" data-sec="Running jokes">
       <div class="section-head rv"><div><p class="eyebrow">Running jokes</p><h2>Things people kept saying.</h2></div></div>
       <div class="pills rv tk-phr" id="phr">${D.phrases.map((p, i) => `<button type="button" class="pill" aria-pressed="${i === 0}" data-i="${i}">${esc(phraseShow(p))}</button>`).join('')}</div>
       <div class="grid g-7-5 mt" id="phr-body"></div>
     </section>
 
-    <section class="section wrap" id="nicknames">
+    <section class="section wrap" id="nicknames" data-sec="Nicknames">
       <div class="section-head rv"><div><p class="eyebrow">Nicknames</p><h2>Who calls whom what.</h2></div>
         <p class="small muted tk-head-note">Counted as whole words, so “Kevin” doesn’t count as a “Kev”. Tap one for every line.</p></div>
       <div class="tk-nicks">${nickBoard(D)}</div>
     </section>
 
-    <section class="section wrap" id="answers">
+    <section class="section wrap" id="answers" data-sec="Who answers whom">
       <div class="section-head rv"><div><p class="eyebrow">Conversation</p><h2>Who answers whom.</h2></div></div>
       <div class="grid g-7-5" style="align-items:start">
         <div class="card rv"><h3 class="card-title">After each person speaks, who goes next</h3>
@@ -778,7 +778,7 @@ export function findings(D) {
     </section>
     <div class="wrap">
 
-    <section class="finding" id="michael">
+    <section class="finding" id="michael" data-sec="After Michael">
       <div class="sticky-col">
         <p class="fnum">One</p>
         <h2>Did the show get worse after Michael left?</h2>
@@ -797,7 +797,7 @@ export function findings(D) {
       </div>
     </section>
 
-    <section class="finding" id="twss">
+    <section class="finding" id="twss" data-sec="That’s what she said">
       <div class="sticky-col">
         <p class="fnum">Two</p>
         <h2>Do “that’s what she said” episodes rate higher?</h2>
@@ -831,7 +831,7 @@ export function findings(D) {
       </div>
     </section>
 
-    <section class="finding" id="hour">
+    <section class="finding" id="hour" data-sec="Hour-longs">
       <div class="sticky-col">
         <p class="fnum">Three</p>
         <h2>Are the hour-long episodes better?</h2>
@@ -847,7 +847,7 @@ export function findings(D) {
       <div><div class="card"><h3 class="card-title">Hour-long episodes against the rest</h3><p class="card-sub"><em>Niagara</em> and <em>The Delivery</em> aired as one hour each but are rated as two halves, so they count as half-hours here.</p><div id="f-h1"></div></div></div>
     </section>
 
-    <section class="finding" id="andy">
+    <section class="finding" id="andy" data-sec="Andy">
       <div class="sticky-col">
         <p class="fnum">Four</p>
         <h2>Is Andy why the later seasons rated lower?</h2>
@@ -863,7 +863,7 @@ export function findings(D) {
         <div class="legend"><span><i class="ring" style="background:var(--accent)"></i>Seasons 1 to 7</span><span><i class="ring" style="background:var(--ink-3)"></i>Seasons 8 and 9</span></div><div id="f-a1"></div></div></div>
     </section>
 
-    <section class="finding" id="more">
+    <section class="finding" id="more" data-sec="What doesn’t matter">
       <div class="sticky-col">
         <p class="fnum">Five</p>
         <h2>Things that don’t matter.</h2>

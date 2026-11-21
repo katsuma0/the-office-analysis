@@ -114,7 +114,9 @@ button { font: inherit; color: inherit; }
 .brand-text b { font: 600 17px/1 var(--serif); letter-spacing: -.01em; }
 .brand-text i { font: italic 400 12.5px/1.2 var(--serif); color: var(--ink-3); }
 
-.nav { display: flex; gap: 2px; margin-left: auto; }
+.nav { display: flex; align-items: center; margin-left: auto; }
+.nav-g { display: flex; gap: 2px; }
+.nav-g + .nav-g { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--line); }
 .nav a {
   position: relative; text-decoration: none; font-size: 14.5px; font-weight: 500; color: var(--ink-2);
   padding: 8px 12px; border-radius: 999px; transition: color .2s, background .2s;
@@ -146,20 +148,23 @@ button { font: inherit; color: inherit; }
   padding: 4px var(--pad) 6px; overflow: auto; overscroll-behavior: contain; animation: sheet-in .3s var(--ease);
   border-bottom: 1px solid var(--line); border-radius: 0 0 22px 22px; box-shadow: 0 24px 48px -24px rgb(0 0 0 / 35%);
 }
-.sheet nav { display: flex; flex-direction: column; }
 .sheet-back { position: fixed; inset: 0; z-index: 44; background: rgb(10 10 12 / 28%); cursor: pointer; -webkit-tap-highlight-color: transparent; animation: fade .3s; }
-.sheet a {
-  text-decoration: none; font: 500 clamp(18px, 2.7dvh, 23px)/1.25 var(--serif); letter-spacing: -.015em; padding: clamp(6px, 1.1dvh, 13px) 0;
-  border-bottom: 1px solid var(--line); opacity: 0; animation: rise .45s var(--ease) forwards;
+/* Home, then the three groups from sitemap.js, two links to a row. */
+.sheet nav > * { opacity: 0; animation: rise .4s var(--ease) forwards; }
+.sheet nav > :nth-child(2) { animation-delay: .04s } .sheet nav > :nth-child(3) { animation-delay: .08s } .sheet nav > :nth-child(4) { animation-delay: .12s }
+.sheet a { text-decoration: none; }
+.sh-home, .sh-links a {
+  display: flex; align-items: center; min-height: clamp(38px, 6.9dvh, 58px); border-bottom: 1px solid var(--line);
+  font: 500 clamp(17px, 2.6dvh, 22px)/1.15 var(--serif); letter-spacing: -.01em;
 }
-.sheet a:last-child { border-bottom: 0; }
-.sheet a.sheet-old { display: inline-block; font: 500 14px/1.4 var(--sans); letter-spacing: 0; color: var(--ink-3); padding: 8px 0 2px; border: 0; animation-delay: .3s; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
-.sheet a:nth-child(2) { animation-delay: .03s } .sheet a:nth-child(3) { animation-delay: .06s } .sheet a:nth-child(4) { animation-delay: .09s }
-.sheet a:nth-child(5) { animation-delay: .12s } .sheet a:nth-child(6) { animation-delay: .15s } .sheet a:nth-child(7) { animation-delay: .18s }
-.sheet a:nth-child(8) { animation-delay: .21s } .sheet a:nth-child(9) { animation-delay: .24s } .sheet a:nth-child(n+10) { animation-delay: .27s }
+.sh-h { margin: clamp(12px, 2.2dvh, 20px) 0 0; font: 650 11px/1.2 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.sh-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; }
+.sheet [aria-current="page"] { color: var(--accent); }
+.sheet [aria-current="page"]::before { content: ""; flex: none; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: currentColor; }
+.sheet a.sheet-old { display: inline-block; font: 500 14px/1.4 var(--sans); color: var(--ink-3); padding: 10px 0 2px; opacity: 0; animation: rise .4s var(--ease) .16s forwards; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(-8px); } }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .nav { display: none; }
   .menu-btn { display: inline-flex; }
   .top-actions { margin-left: auto; }
@@ -634,7 +639,7 @@ details.tv .table-wrap { margin-top: 10px; max-height: 360px; overflow: auto; }
 :root[data-theme="dark"] .chart text.cell-n { fill: #0e1a33; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chart text.cell-n { fill: #0e1a33; } }
 
-.nav a.nav-play { color: var(--note-ink); background: var(--note); margin-left: 6px; }
+.nav a.nav-play { color: var(--note-ink); background: var(--note); }
 .nav a.nav-play:hover, .nav a.nav-play.on { background: var(--note); color: var(--note-ink); box-shadow: var(--shadow); }
 .foot-inner { align-items: center; }
 
@@ -1972,3 +1977,28 @@ details.tv .table-wrap { overflow-y: auto; }
 /* fan-09: .dn-rn clips with overflow:hidden for the ellipsis, which cut the focus ring down to two brackets.
    Draw the ring inside the link instead. */
 .dn-rn a:focus-visible { outline-offset: -2px; border-radius: 3px; }
+
+/* ================================================================ wayfinding (assets/js/wayfinding.js) */
+
+/* "On this page": jump links to a long page's sections, stuck under the header. */
+.secbar .pills.scroll.at-end { mask-image: none; -webkit-mask-image: none; }
+.secbar .pill { padding: 6px 13px; }
+.secbar .pill.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+@media (max-width: 700px) { .secbar .label { display: none; } .secbar { padding: 8px 0; } }
+[data-sec]:focus { outline: none; }
+
+/* The page before and the page after, at the foot of every top-level page. */
+.tour { padding-top: 8px; padding-bottom: 32px; }
+.tour .pager { margin-top: 24px; }
+.tour .pager span { white-space: normal; overflow: visible; text-wrap: balance; }
+
+.to-top {
+  position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 40;
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg);
+  animation: fade .25s; transition: transform .2s var(--ease), border-color .2s;
+}
+.to-top svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform: rotate(-90deg); }
+.to-top:hover { transform: translateY(-2px); border-color: var(--ink-3); }
+.to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media print { .to-top, .secbar, .tour { display: none; } }
