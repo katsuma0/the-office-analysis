@@ -53,4 +53,10 @@ export const SPOTS = [
   { t: 'Running jokes', s: 'Dialogue', h: '#/dialogue@jokes', k: 'jokes catchphrases phrases' },
   { t: 'Nicknames', s: 'Dialogue', h: '#/dialogue@nicknames', k: 'nickname tuna big tuna who calls whom' },
   { t: 'Who answers whom', s: 'Dialogue', h: '#/dialogue@answers', k: 'conversation replies answers talks to' },
+  { t: 'Longest scenes', s: 'Dialogue', h: '#/dialogue@long-scenes', k: 'scene scenes back and forth|two people' },
+  { t: 'Everyone who directed or wrote', s: 'Crew', h: '#/crew@everyone', k: 'all directors and writers|full list|everyone|83' },
+  { t: 'Writers', s: 'Crew', h: '#/crew@writers', k: 'writer wrote written by' },
+  { t: 'Guest directors', s: 'Crew', h: '#/crew@guest-directors', k: 'guest famous directors' },
+  { t: 'Lowest rated episodes', s: 'Episodes', h: '#/episodes@order=low', k: 'worst episodes|worst|lowest|bottom' },
+  { t: 'Hour-long episodes', s: 'Episodes', h: '#/episodes@hour=1', k: 'hour long list|hourlong episodes' },
 ];
