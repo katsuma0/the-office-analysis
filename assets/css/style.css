@@ -466,7 +466,6 @@ a.hbar:hover .hn { text-decoration: underline; text-underline-offset: 3px; }
 }
 .ep-row:first-child { border-top: 0; }
 .ep-row:hover { background: var(--surface-2); }
-.ep-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 6px; }
 .ep-row:hover .ep-go { transform: translateX(3px); color: var(--ink); }
 .ep-no { font: 500 22px/1 var(--serif); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .ep-t { font-weight: 600; font-size: 15.5px; letter-spacing: -.01em; }
@@ -1082,8 +1081,9 @@ a.word:hover, a.word:focus-visible { background: var(--accent-soft); transform: 
   transition: translate .35s var(--spring), box-shadow .3s, opacity .8s var(--ease), transform .8s var(--ease);
   transition-delay: 0s, 0s, var(--d, 0s), var(--d, 0s);
 }
-.tk-card:nth-child(4n+1) { rotate: -.5deg; }
-.tk-card:nth-child(4n+3) { rotate: .4deg; }
+/* Counted by type: a panel of lines (a <section>) can open among the cards, and must not swap their tilt. */
+.tk-card:nth-of-type(4n+1) { rotate: -.5deg; }
+.tk-card:nth-of-type(4n+3) { rotate: .4deg; }
 .tk-card.is-tap { cursor: pointer; }
 .tk-card.is-tap:hover { translate: 0 -3px; box-shadow: var(--shadow-lg); }
 .tk-line {
@@ -2015,3 +2015,333 @@ details.tv .table-wrap { overflow-y: auto; }
    menu was tapped. A fixed box is never scrolled to. 63px is the header's height, used by the bars under it too. */
 .top { position: fixed; inset: 0 0 auto 0; }
 body { padding-top: 63px; }
+
+/* ================================================================ pages.js: finding your way around
+   Home, the seasons index, one season, the ranked list, one episode, and the episode rows people.js shares. */
+
+/* ---------------------------------------------------------------- tap areas
+
+   Padding with a matching negative margin: a bigger target for a thumb, the same look.
+   (Breadcrumbs do the same.) */
+.skyline-cap .pg-link { display: inline-block; padding: 12px 0; margin: -12px 0; }
+
+/* ---------------------------------------------------------------- links inside small print
+
+   Stat notes, card subtitles, ledes and legends now name seasons, episodes and people. They get the quiet
+   underline the site already uses in .sp-note and .ep-facts. :where() keeps these at the weight of a bare "a",
+   so they are only a default: any rule that names its own class (the people pages have several) still wins. */
+:where(.lede, .stat-note, .stat-label, .card-sub, .card-title, .legend, .home-note) a {
+  text-decoration: underline; text-decoration-thickness: 1px; text-decoration-color: var(--line-2); text-underline-offset: 3px;
+}
+:where(.lede) a { text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
+:where(.home-note) a { text-decoration-color: color-mix(in srgb, var(--note-ink) 35%, transparent); }
+:where(.lede, .stat-note, .stat-label, .card-sub, .card-title, .legend, .home-note) a:hover { text-decoration-color: currentColor; }
+/* A stat whose label is the way in to the finding about it. */
+.stat-label a { display: inline-block; padding: 10px 0; margin: -10px 0; }
+.stat-label a::after { content: " →"; }
+
+/* ---------------------------------------------------------------- home: counters
+
+   The label is the link; it is stretched over its whole cell, number included. */
+.hero-counters div { position: relative; }
+.hero-counters a { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s; }
+.hero-counters a::after { content: ""; position: absolute; inset: 0; }
+.hero-counters b { transition: color .2s; }
+.hero-counters div:hover b { color: var(--accent); }
+.hero-counters div:hover a { color: var(--ink); text-decoration-color: currentColor; }
+.hero-counters a:focus-visible { outline: none; }
+.hero-counters a:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+
+/* ---------------------------------------------------------------- home: the whole site
+
+   The nav's three groups, every page a row. Three columns on a laptop, one stack of full-width rows on a phone. */
+.dir-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.dir-g { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.dir-h { font: 600 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin: 0; padding: 16px 18px 13px; }
+.dir-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; min-height: 58px;
+  padding: 10px 18px; text-decoration: none; border-top: 1px solid var(--line); transition: background .2s;
+}
+.dir-row::after { content: "→"; grid-column: 2; grid-row: 1 / span 2; color: var(--ink-3); font-size: 18px; transition: transform .25s var(--ease), color .2s; }
+.dir-row:hover { background: var(--surface-2); }
+.dir-row:hover::after { transform: translateX(3px); color: var(--ink); }
+.dir-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 6px; }
+.dir-n { grid-column: 1; font-weight: 600; font-size: 15.5px; line-height: 1.3; letter-spacing: -.01em; color: var(--ink); }
+.dir-s { grid-column: 1; font-size: 13px; line-height: 1.35; color: var(--ink-3); }
+@media (max-width: 760px) {
+  .dir-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dir-h { padding: 14px 16px 11px; }
+  .dir-row { min-height: 54px; padding: 8px 16px; }
+}
+
+/* ---------------------------------------------------------------- home and seasons: 1 to 9
+
+   Under 701px the nine season cards are a sideways rail. This row of pills sits above it, so every season is
+   one tap away without swiping. */
+.season-jump { display: none; }
+@media (max-width: 700px) {
+  .season-jump { display: block; margin: 0 0 14px; }
+  .season-jump .pills.scroll.season-pills {
+    display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; padding: 0; margin: 0;
+    overflow: visible; mask-image: none; -webkit-mask-image: none;
+  }
+  .season-jump .pill { display: grid; place-items: center; min-height: 44px; padding: 0; font-size: 15px; font-weight: 600; }
+}
+/* Between a phone and a wide laptop the rail hid seasons 5 to 9 from a mouse (no wheel, no scrollbar).
+   There the cards wrap instead: three by three, then five and four. */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .page .season-rail { grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; scroll-snap-type: none; padding: 0; margin: 0; }
+}
+@media (min-width: 701px) and (max-width: 900px) {
+  .page .season-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .page .season-rail .season-card { min-height: 220px; }
+}
+
+/* ---------------------------------------------------------------- home: four findings
+
+   On a phone they were a sideways rail with two of the four off screen. Now they stack as compact rows:
+   the number, the name of the finding, and the one sentence that says what the number is. */
+@media (max-width: 620px) {
+  .find-grid { gap: 10px; }
+  .find-grid .teaser { display: grid; grid-template-columns: 84px minmax(0, 1fr); column-gap: 14px; row-gap: 3px; align-items: center; padding: 14px 16px; }
+  .find-grid .teaser .big { grid-column: 1; grid-row: 1 / span 2; font-size: 31px; letter-spacing: -.035em; }
+  .find-grid .teaser .link-arrow { grid-column: 2; grid-row: 1; margin: 0; padding: 0; font-size: 15px; align-self: end; }
+  .find-grid .teaser p { grid-column: 2; grid-row: 2; font-size: 13.5px; line-height: 1.4; align-self: start; }
+  .find-grid .tz-more { display: none; }
+}
+
+/* ---------------------------------------------------------------- episode rows (epRow)
+
+   The row used to be one link. Now the title is the link, stretched over the whole row, and the director,
+   the writers and (on the ranked list) the season are links of their own on top of it. */
+.ep-row { position: relative; }
+.ep-link { text-decoration: none; }
+.ep-link::after { content: ""; position: absolute; inset: 0; }
+.ep-link:focus-visible { outline: none; }
+.ep-link:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 6px; }
+/* Flags and chips sit above the stretched link so their tooltips still show; they are inside it, so a click still opens the episode. */
+.ep-link .ep-flags, .ep-link .ep-chip { position: relative; z-index: 1; }
+/* The credit line wraps instead of ending in an ellipsis, so a phone shows the writer too. Names don't break in half. */
+.ep-row .ep-m { white-space: normal; overflow: visible; }
+.ep-p, .ep-when { white-space: nowrap; }
+/* A credit moves to the next line whole ("Wr. Mindy Kaling"), and only breaks between names when it is wider than the line. */
+.ep-cr { display: inline-block; max-width: 100%; white-space: normal; }
+.ep-m a { position: relative; z-index: 1; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s; }
+.ep-m a:hover { color: var(--ink); text-decoration-color: currentColor; }
+.ep-m a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.ep-me { color: var(--ink-2); font-weight: 600; }
+@media (max-width: 680px) {
+  /* On a phone the credit line runs the full width of the row, under the title and the rating, so it wraps less:
+     the date and the director on one line, the writers on the next. */
+  .ep-row { row-gap: 2px; }
+  .ep-row .ep-main { display: contents; }
+  .ep-row .ep-no { grid-column: 1; grid-row: 1 / span 2; }
+  .ep-row .ep-link { grid-column: 2; grid-row: 1; min-width: 0; }
+  .ep-row .rating { grid-column: 3; grid-row: 1; }
+  .ep-row .ep-m { grid-column: 2 / -1; grid-row: 2; line-height: 1.7; margin-top: 0; }
+  /* Padding on an inline link makes the target taller without moving the line. */
+  .ep-m a { padding: 7px 0; }
+  .ep-list.ranked .ep-row { contain-intrinsic-size: auto 110px; }
+}
+
+/* ---------------------------------------------------------------- every episode, ranked */
+
+/* The "with <character>" filter: a pressed pill that names them; tapping it takes the filter off. */
+.rk-with { display: inline-flex; align-items: center; gap: 7px; }
+.rk-with span { opacity: .7; font-size: 15px; line-height: 1; }
+/* Phones: all nine seasons in two rows of five (it was a strip with 8 cut off and 9 off screen). */
+@media (max-width: 620px) {
+  .rk-row .pills.scroll.rk-seasons {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; flex: 1 1 100%; padding: 0; margin: 0;
+    overflow: visible; mask-image: none; -webkit-mask-image: none;
+  }
+  .rk-row .rk-seasons .pill { display: grid; place-items: center; min-height: 40px; padding: 0; }
+}
+/* A line that says what the list is showing, stuck under the header once the controls have scrolled away.
+   It takes no room in the page (height 0), so showing and hiding it never moves the list. */
+.rk-pin { position: sticky; top: 63px; z-index: 30; height: 0; }
+.rk-pin-in { background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); padding: 8px 0; animation: fade .2s; }
+.rk-pin-b {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 6px 16px; cursor: pointer; text-align: left;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font: 500 13.5px/1.2 var(--sans);
+  -webkit-tap-highlight-color: transparent; transition: border-color .2s, color .2s;
+}
+.rk-pin-b:hover { border-color: var(--line-2); color: var(--ink); }
+.rk-pin-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* One line when it fits, which is most of the time; with several filters on a phone it takes a second line rather than cut one off. */
+.rk-pin-t { flex: 1; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; line-height: 1.3; }
+.rk-pin-go { flex-shrink: 0; color: var(--accent); font-weight: 600; }
+.rk-pin-go::after { content: " ↑"; }
+@media (max-width: 620px) { .rk-pin-b { font-size: 13px; padding: 6px 14px; gap: 10px; } .rk-pin-go::after { content: none; } }
+@media print { .rk-pin { display: none; } }
+
+/* ---------------------------------------------------------------- one episode */
+
+/* Names in "Who talks when" are links to the character. */
+.barcode-row .bn a { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 8px 0; margin: -8px 0; text-decoration: none; }
+.barcode-row .bn a:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Everyone else with a page who has lines in the episode, under the six bars. */
+.ep-cast { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.ep-cast-h { font-size: 12.5px; color: var(--ink-3); margin-right: 4px; }
+.ep-cast a.chip { text-decoration: none; min-height: 30px; transition: background .2s, color .2s; }
+.ep-cast a.chip b { font-weight: 500; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ep-cast a.chip:hover { background: var(--line); color: var(--ink); }
+@media (max-width: 620px) { .ep-cast { gap: 8px; } .ep-cast a.chip { min-height: 38px; padding: 6px 13px; } }
+
+/* ================================================================ people pages: wayfinding (assets/js/people.js)
+   Characters index, character, crew and person pages. */
+
+/* Names inside sentences that are now links (actor, episode titles, seasons, other characters). The sentence is
+   muted, so the link is a step darker with a quiet underline, the way the notes under the charts already do it. */
+.char-hero .actor a, .pp-stats .stat-note a, .att-card .card-sub a, .eyebrow .pp-eb a, .pp-prose a, .punch a, .face-b a, .creed-index a {
+  color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--line-2); text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+.pp-prose a, .punch a { color: inherit; }
+.char-hero .actor a:hover, .pp-stats .stat-note a:hover, .att-card .card-sub a:hover, .eyebrow .pp-eb a:hover, .pp-prose a:hover, .punch a:hover, .face-b a:hover, .creed-index a:hover {
+  color: var(--ink); text-decoration-color: currentColor;
+}
+/* A little more to hit on the small ones. Vertical padding on inline text doesn't move the lines. */
+.char-hero .actor a, .pp-stats .stat-note a, .eyebrow .pp-eb a { padding-block: 8px; }
+/* Person page eyebrow ("Director and Writer · also plays Kelly"): the eyebrow is a flex row, so the text and its
+   link sit in one span. On a phone it wraps to two lines, which need more than the eyebrow's line-height of 1;
+   the margin gives the extra back, so a one-line eyebrow is exactly as tall as before. */
+.eyebrow .pp-eb { line-height: 1.5; margin: -3px 0; }
+.sticky-note.pp-note a { text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px; }
+.sticky-note.pp-note a:hover { text-decoration-color: currentColor; }
+
+/* Character page: "All 139 Michael episodes, ranked" under the five biggest. */
+.pp-all { margin: 16px 0 0; }
+.pp-all .link-arrow { padding: 11px 0; margin: -11px 0; }
+
+/* Person page: the seasons they worked on, each one a link. Pills, because single digits in a sentence are too
+   small and too close together to tap. */
+.stat-note.pp-ss { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.stat-note.pp-ss a {
+  min-width: 34px; height: 34px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-decoration: none;
+  font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; transition: border-color .15s ease, transform .15s ease;
+}
+.stat-note.pp-ss a:hover { border-color: var(--ink-3); transform: translateY(-1px); }
+/* The pill stays 34px to look at; the tap area around it is 40 by 44, which is all the 6px gap leaves room for. */
+.stat-note.pp-ss a { position: relative; }
+/* place-self: the pill is a grid that centres its number, and without this the overlay would be centred to nothing. */
+.stat-note.pp-ss a::after { content: ""; position: absolute; inset: -6px -4px; place-self: stretch; }
+/* One season only: the big number is the link. */
+.stat-value a.pp-s1 { display: inline-block; padding: 4px 14px; margin: -4px -14px; text-decoration: underline; text-decoration-color: var(--line-2); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.stat-value a.pp-s1:hover { text-decoration-color: var(--accent); }
+
+/* Crew page: everyone with a page, name over what they did. Rows are 48px so two columns on a phone stay tappable. */
+.pp-ev { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0 22px; }
+.pp-ev a { display: flex; flex-direction: column; justify-content: center; min-height: 48px; padding: 6px 0; border-top: 1px solid var(--line); text-decoration: none; min-width: 0; }
+.pp-ev span { font-size: 14px; font-weight: 550; line-height: 1.25; overflow-wrap: anywhere; }
+.pp-ev small { font-size: 11.5px; line-height: 1.35; color: var(--ink-3); }
+.pp-ev a:hover span { color: var(--accent); }
+.pp-ev a:focus-visible { outline-offset: -2px; }
+@media (max-width: 560px) {
+  .pp-ev { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+  .pp-ev span { font-size: 13.5px; }
+}
+
+/* ================================================================ talk: navigation (assets/js/talk.js) */
+
+/* ---------------------------------------------------------------- dialogue: search */
+
+/* The jump bar sits right on top of the search box. A little air between them. */
+.secbar + #search { padding-top: 18px; }
+
+/* The count, straight under the box, where it still shows above a phone's keyboard. Tapping it goes to the lines.
+   On a wide screen the result card is already in view under the box, so the line would only repeat it. */
+.tk-count { display: flex; align-items: center; min-height: 40px; margin: 6px 0 -4px; font-size: 14.5px; color: var(--ink-3); }
+.tk-count[hidden] { display: none; }
+.tk-jump {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0; border: 0; background: none;
+  font: inherit; font-weight: 600; color: var(--accent); cursor: pointer;
+}
+.tk-jump::after { content: "↓"; transition: transform .25s var(--ease); }
+.tk-jump:hover::after { transform: translateY(3px); }
+.tk-jump:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+@media (min-width: 961px) { .tk-count { display: none; } }
+
+/* With a search on, a phone folds the twelve suggestions into one row that scrolls, so the results start higher. */
+@media (max-width: 620px) {
+  #search.has-q .suggest {
+    flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
+    margin: 8px calc(-1 * var(--pad)) 0; padding: 2px var(--pad); scroll-padding-inline: var(--pad);
+    mask-image: linear-gradient(90deg, #000 86%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent);
+  }
+  #search.has-q .suggest::-webkit-scrollbar { display: none; }
+  #search.has-q .suggest .pill { flex: none; }
+}
+
+/* Results: the lines first. Stacked, the two charts follow them; side by side, they ride along while the lines scroll. */
+.tk-side { align-content: start; min-width: 0; }
+@media (min-width: 961px) and (min-height: 840px) { .tk-side { position: sticky; top: 130px; } }
+#s-hits:focus { outline: none; }
+#s-hits:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+/* ---------------------------------------------------------------- dialogue: lines in place */
+
+/* A quote, nickname or running-joke card opens its lines right under itself. The panel takes a whole row of the
+   board; dense packing lets the cards after the tapped one fill the rest of its row, so nothing else moves. */
+.tk-wall, .tk-nicks { grid-auto-flow: dense; }
+.tk-in {
+  grid-column: 1 / -1; min-width: 0; text-align: left;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r); box-shadow: var(--shadow);
+  padding: 10px 16px 16px; animation: tk-in .25s var(--ease);
+}
+@keyframes tk-in { from { opacity: 0; transform: translateY(-6px); } }
+.tk-in-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.tk-in-t { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.tk-in-t b { font: 400 18px/1.3 var(--mono); letter-spacing: -.01em; color: var(--ink); overflow-wrap: anywhere; }
+.tk-in-n { font-size: 13px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tk-in-x {
+  flex: none; width: 40px; height: 40px; margin-right: -8px; display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: none; color: var(--ink-2); cursor: pointer; transition: background .2s, color .2s;
+}
+.tk-in-x:hover { background: var(--bg-2); color: var(--ink); }
+.tk-in-x:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tk-in-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.tk-in-body { padding-top: 4px; }
+.tk-in-body > p { margin: 10px 0 0; }
+.tk-in .script .tx { overflow-wrap: anywhere; }
+.tk-in .script .ln:focus { outline: none; }
+.tk-in .script .ln:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.tk-in .tk-load { padding-top: 10px; }
+.tk-in-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 8px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.tk-in-ms:empty { display: none; }
+/* The card whose lines are showing. */
+.tk-card.is-open, .tk-nick.is-open { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
+/* Inside a running-joke card the panel is part of the card, not a card of its own. */
+.card > .tk-in { margin: 12px 0 0; background: var(--surface-2); box-shadow: none; }
+/* "Read all 38 lines" opens them here, so its arrow points down, and up once they're open. */
+.tk-read::after { content: "↓"; }
+.tk-read[aria-expanded="true"]::after { content: "↑"; }
+.tk-read:hover::after { transform: translateY(2px); }
+.tk-read[aria-expanded="true"]:hover::after { transform: translateY(-2px); }
+@media (max-width: 520px) {
+  .tk-in { padding: 8px 12px 14px; }
+  .tk-in-t b { font-size: 16px; }
+  /* A box inside a box leaves a phone 290px of line. Inside a card the panel is a ruled-off part of the card. */
+  .card > .tk-in { padding: 2px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
+}
+@media (prefers-reduced-motion: reduce) { .tk-in { animation: none; } }
+
+/* ---------------------------------------------------------------- dialogue: who answers whom */
+
+/* Names in the sentences and pairs on the scene list are links now. A quiet underline, like the rest of the site. */
+#answers .prose a, a.tk-pair, .tk-pair a { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+#answers .prose a:hover, a.tk-pair:hover, .tk-pair a:hover { text-decoration-color: currentColor; }
+a.tk-pair:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+/* ---------------------------------------------------------------- findings */
+
+/* Chips that go somewhere are outlined. The count chips beside them stay flat, so the two no longer look alike. */
+.tk-chips a.chip {
+  text-decoration: none; min-height: 32px; padding: 5px 12px; background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-2); transition: background .2s, box-shadow .2s, color .2s;
+}
+.tk-chips a.chip:hover { background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--ink-3); color: var(--ink); }
+.tk-chips a.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (pointer: coarse) { .tk-chips a.chip { min-height: 38px; padding: 7px 13px; } .tk-chips:has(a.chip) { gap: 8px; } }
+/* A one-digit link ("seasons 8 and 9") keeps its size on the page and still takes a thumb. */
+.tk-n { display: inline-block; padding: 10px 8px; margin: -10px -8px; }

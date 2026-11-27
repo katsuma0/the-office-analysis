@@ -1,5 +1,6 @@
-import { $, $$, esc, fmt, slug, color, initials, count, hbars, arrow, epCode, tableView, hasSlot } from './ui.js';
-import { skyline, spark, lollipops, barcode, seqThumb, columns, mount, seasonStrip } from './charts.js';
+import { $, $$, esc, fmt, slug, color, initials, count, hbars, arrow, epCode, tableView, hasSlot, tip, nav } from './ui.js';
+import { skyline, spark, lollipops, barcode, seqThumb, columns, mount, seasonStrip, epTip } from './charts.js';
+import { GROUPS, PAGES } from './sitemap.js';
 
 // ---------------------------------------------------------------- small helpers
 
@@ -30,6 +31,13 @@ const charA = (D, k) => (D.char[k] ? `<a href="#/character/${slug(k)}">${esc(k)}
 const fullA = (c) => `<a href="#/character/${slug(c.key)}">${esc(c.name)}</a>`;
 const personA = (D, p) => (D.people[slug(p)] ? `<a href="#/person/${slug(p)}">${esc(p)}</a>` : esc(p));
 const searchHref = (w) => `#/dialogue/q/${encodeURIComponent(w)}`;
+const seaA = (n, label = `season ${n}`) => `<a href="#/season/${n}">${label}</a>`;
+// Top-level pages by their key in sitemap.js, so a breadcrumb or a pager never retypes a page's name.
+const PG = Object.fromEntries(PAGES.map((p) => [p.key, p]));
+const pageA = (key) => `<a href="${PG[key].h}">${esc(PG[key].name)}</a>`;
+// The nine seasons as one row of pills. On a phone it sits above the sideways rail of season cards,
+// so season 9 is one tap away and not seven swipes.
+const seasonJump = (D) => `<nav class="season-jump" aria-label="Seasons"><div class="pills scroll season-pills">${D.seasons.map((s) => `<a class="pill" href="#/season/${s.n}" aria-label="Season ${s.n}">${s.n}</a>`).join('')}</div></nav>`;
 
 // The same look as ui.words(), but every word opens a dialogue search.
 function wordLinks(list, max = 14) {
@@ -51,28 +59,33 @@ const scriptLine = ([, sp, tx]) => `<div class="ln"><span class="sp"><i class="d
 
 // ---------------------------------------------------------------- season blurbs
 
-// Hand-written from the show. Anything countable is counted from the data.
+// Hand-written from the show. Anything countable is counted from the data. They come back as HTML: the people
+// in them link to their pages, and an episode they name links to that episode when the data has it.
+const epNamed = (D, title, text = title) => {
+  const e = D.episodes.find((x) => x.t === title);
+  return e ? `<a href="#/episode/${e.id}">${esc(text)}</a>` : esc(text);
+};
 const BLURB = {
-  1: (D, s) => `${cap(nw(s.episodes))} episodes, shot close to the British original. Michael is meaner here, and a second season was not a sure thing.`,
-  2: () => 'The show finds its voice. Michael gets softer, Jim and Pam get complicated, and it ends at Casino Night.',
-  3: (D, s) => `Jim transfers to Stamford, and when the branches merge he comes back with Karen and Andy.${top(D, s) ? ' Highest average rating of any season.' : ''}`,
+  1: (D, s) => `${cap(nw(s.episodes))} episodes, shot close to the British original. ${charA(D, 'Michael')} is meaner here, and a second season was not a sure thing.`,
+  2: (D) => `The show finds its voice. ${charA(D, 'Michael')} gets softer, ${charA(D, 'Jim')} and ${charA(D, 'Pam')} get complicated, and it ends at ${epNamed(D, 'Casino Night')}.`,
+  3: (D, s) => `${charA(D, 'Jim')} transfers to Stamford, and when the branches merge he comes back with ${charA(D, 'Karen')} and ${charA(D, 'Andy')}.${top(D, s) ? ' Highest average rating of any season.' : ''}`,
   4: (D, s) => {
     const eps = D.episodes.slice(s.first, s.last + 1);
     let lead = 0;
     while (eps[lead]?.hour) lead++;
-    return `Cut short by the 2007-08 writers’ strike, with ${nw(lead)} hour-long episodes up front. Ryan runs corporate until he’s arrested in the finale, the same episode where Toby leaves for Costa Rica and Holly arrives.`;
+    return `Cut short by the 2007-08 writers’ strike, with ${nw(lead)} hour-long episodes up front. ${charA(D, 'Ryan')} runs corporate until he’s arrested in <a href="#/episode/${s.last}">the finale</a>, the same episode where ${charA(D, 'Toby')} leaves for Costa Rica and ${charA(D, 'Holly')} arrives.`;
   },
   5: (D, s) => {
     const sb = D.episodes[D.findings.superBowl];
     const counts = D.seasons.map((x) => streamCount(D.episodes.slice(x.first, x.last + 1)));
     const mine = counts[s.n - 1];
     const longest = counts.every((c, i) => i === s.n - 1 || c < mine);
-    return `${longest ? `The longest season, ${mine} episodes the way streaming counts them. ` : ''}Michael falls for Holly, ${sb.s === s.n ? `a Super Bowl episode pulls ${sb.v.toFixed(1)} million viewers, ` : ''}and he quits to start a rival paper company.`;
+    return `${longest ? `The longest season, ${mine} episodes the way streaming counts them. ` : ''}${charA(D, 'Michael')} falls for ${charA(D, 'Holly')}, ${sb.s === s.n ? `<a href="#/episode/${sb.id}">a Super Bowl episode</a> pulls ${sb.v.toFixed(1)} million viewers, ` : ''}and he quits to start a rival paper company.`;
   },
-  6: () => 'Jim and Pam get married at Niagara Falls and have a baby, and Jim becomes co-manager. Sabre buys Dunder Mifflin.',
-  7: () => 'Michael’s last season. Holly comes back, he proposes, and he leaves for Colorado in “Goodbye, Michael”.',
-  8: (D, s) => `Andy is manager, Robert California is CEO, and part of the season moves to Tallahassee.${bottom(D, s) ? ' Lowest-rated season.' : ''}`,
-  9: () => 'The documentary airs. Andy sails away, Jim splits his time between Scranton and Philadelphia, and the finale brings back almost everyone.',
+  6: (D) => `${charA(D, 'Jim')} and ${charA(D, 'Pam')} get married at ${epNamed(D, 'Niagara: Part 1', 'Niagara Falls')} and have a baby, and Jim becomes co-manager. Sabre buys Dunder Mifflin.`,
+  7: (D) => `${charA(D, 'Michael')}’s last season. ${charA(D, 'Holly')} comes back, he proposes, and he leaves for Colorado in “${epNamed(D, 'Goodbye, Michael')}”.`,
+  8: (D, s) => `${charA(D, 'Andy')} is manager, ${D.char.Robert ? fullA(D.char.Robert) : 'Robert California'} is CEO, and part of the season moves to Tallahassee.${bottom(D, s) ? ' Lowest-rated season.' : ''}`,
+  9: (D, s) => `The documentary airs. ${charA(D, 'Andy')} sails away, ${charA(D, 'Jim')} splits his time between Scranton and Philadelphia, and <a href="#/episode/${s.last}">the finale</a> brings back almost everyone.`,
 };
 const top = (D, s) => D.seasons.every((x) => x === s || x.avgRating < s.avgRating);
 const bottom = (D, s) => D.seasons.every((x) => x === s || x.avgRating > s.avgRating);
@@ -96,21 +109,41 @@ function stripLegend(D, eps, lead) {
   return `${lead} ${slotted.map((k) => `<span><i class="sq" style="background:${color(k)}"></i>${esc(k)}</span>`).join('')}${others ? '<span><i class="sq" style="background:var(--other)"></i>Others</span>' : ''}`;
 }
 
-// o.no replaces the number on the left (a rank, say), o.chip adds a chip after the title, o.code puts "S4 · E13" in the meta line.
+// Who directed and who wrote, each name its own link when that person has a page. o.first is a person whose
+// credit goes to the front; their name is left plain, because the row is on their page.
+// Each dot sits inside the piece before it, so when the line wraps on a phone it breaks after a dot, never before.
+function credits(e, D, o) {
+  const mine = (list) => (o.first && list.includes(o.first) ? 1 : 0);
+  const groups = [['Dir.', e.dir], ['Wr.', e.wri]].filter(([, list]) => list.length);
+  groups.sort((x, y) => mine(y[1]) - mine(x[1]));
+  const one = (p) => (p === o.first ? `<span class="ep-p ep-me">${esc(p)}</span>`
+    : D.people?.[slug(p)] ? `<a class="ep-p" href="#/person/${slug(p)}">${esc(p)}</a>` : `<span class="ep-p">${esc(p)}</span>`);
+  return groups.map(([role, list], i) => {
+    const names = mine(list) ? [o.first, ...list.filter((p) => p !== o.first)] : list;
+    return `<span class="ep-cr">${role}&nbsp;${names.map(one).join(', ')}${i < groups.length - 1 ? '&nbsp;·' : ''}</span>`;
+  }).join(' ');
+}
+
+// o.no replaces the number on the left (a rank, say), o.chip adds a chip after the title, o.code puts "S4 · E13" in the
+// meta line with the season linked, o.first is a person's name whose credit comes first (see credits above).
 // The number span stays exactly <span class="ep-no">…</span> so callers can swap it out.
+// The row is not a link itself. The title is, stretched over the whole row with CSS (.ep-link::after), and the
+// people in the credit line are links of their own sitting above it, so nothing is nested and Tab goes
+// episode, director, writer.
 export function epRow(e, D, o = {}) {
   const no = String(o.no ?? e.se);
+  const code = o.code ? `<a class="ep-p" href="#/season/${e.s}" aria-label="Season ${e.s}">S${e.s}</a> · E${esc(e.se)} · ` : '';
   return `
-  <a class="ep-row${no.length > 3 ? ' long-no' : ''}" href="#/episode/${e.id}"${o.noTitle ? ` title="${esc(o.noTitle)}"` : ''}>
+  <div class="ep-row${no.length > 3 ? ' long-no' : ''}"${o.noTitle ? ` title="${esc(o.noTitle)}"` : ''}>
     <span class="ep-no">${esc(no)}</span>
-    <span style="min-width:0">
-      <span class="ep-t">${esc(e.t)}</span>${flags(e)}${o.chip ? ` ${o.chip}` : ''}
-      <span class="ep-m" style="display:block">${o.code ? `${epCode(e)} · ` : ''}${fmt.date(e.date)} · Dir. ${esc(e.dir.join(', '))} · Wr. ${esc(e.wri.join(', '))}</span>
+    <span class="ep-main" style="min-width:0">
+      <a class="ep-link" href="#/episode/${e.id}"><span class="ep-t">${esc(e.t)}</span>${flags(e)}${o.chip ? ` ${o.chip}` : ''}</a>
+      <span class="ep-m" style="display:block"><span class="ep-when">${code}${fmt.date(e.date)}&nbsp;·</span> ${credits(e, D, o)}</span>
     </span>
     ${seqThumb(e)}
     <span class="rating">${e.r.toFixed(1)}</span>
     <span class="ep-go" aria-hidden="true">→</span>
-  </a>`;
+  </div>`;
 }
 
 export function badges(D, list) {
@@ -132,7 +165,7 @@ export function home(D) {
   const T = D.totals;
   const F = D.findings;
   const E = D.episodes;
-  const { best: tops, worst: lows } = extremes(E);
+  const { best: tops } = extremes(E);
   const mich = D.char.Michael;
   const S = D.seasons;
 
@@ -162,25 +195,25 @@ export function home(D) {
             </div>
           </div>
           <div class="hero-counters">
-            <div><b>${count(T.episodes)}</b><span>episodes</span></div>
-            <div><b>${count(T.lines)}</b><span>lines of dialogue</span></div>
-            <div><b>${count(T.words)}</b><span>words spoken</span></div>
-            <div><b>${count(T.directors)}</b><span>directors, ${T.writers} writers</span></div>
+            <div><b>${count(T.episodes)}</b><span><a href="${PG.episodes.h}">episodes</a></span></div>
+            <div><b>${count(T.lines)}</b><span><a href="${PG.dialogue.h}">lines of dialogue</a></span></div>
+            <div><b>${count(T.words)}</b><span><a href="${PG.dialogue.h}">words spoken</a></span></div>
+            <div><b>${count(T.directors)}</b><span><a href="${PG.crew.h}">directors, ${T.writers} writers</a></span></div>
           </div>
         </div>
         <div class="skyline-wrap rv">
           <div class="skyline-cap">
             <span><b>Every episode, rated.</b> IMDb score in air order, with the bars starting at 6. <span style="color:var(--accent);font-weight:600">Blue</span> is the Michael era.</span>
-            <span>Top: ${join(tops.map(epA))}, ${tops.length === 2 ? 'both ' : tops.length > 2 ? 'all ' : ''}${tops[0].r.toFixed(1)} · <a class="pg-link" href="#/episodes">See all ${E.length}, ranked</a></span>
+            <span>Top: ${join(tops.map(epA))}, ${tops.length === 2 ? 'both ' : tops.length > 2 ? 'all ' : ''}${tops[0].r.toFixed(1)} · <a class="pg-link" href="${PG.episodes.h}">${esc(PG.episodes.name)}</a></span>
           </div>
           <div id="sky"></div>
         </div>
       </div>
     </section>
 
-    ${thisWeek(D)}
+    ${directory()}
 
-    ${playRow(D)}
+    ${thisWeek(D)}
 
     <section class="section">
       <div class="wrap">
@@ -188,6 +221,7 @@ export function home(D) {
           <div><p class="eyebrow">Seasons</p><h2>Pick a season.</h2></div>
           <a class="link-arrow" href="#/seasons">All ${nw(S.length)} side by side</a>
         </div>
+        ${seasonJump(D)}
         <div class="season-rail">
           ${S.map((s, i) => seasonCard(s, D, i)).join('')}
         </div>
@@ -200,31 +234,31 @@ export function home(D) {
           <div><p class="eyebrow">Findings</p><h2>Four things the data says.</h2></div>
           <a class="link-arrow" href="#/findings">The full write-up</a>
         </div>
-        <div class="grid g4 play-grid">
+        <div class="grid g4 find-grid">
           <a class="card teaser rv" href="#/findings@michael">
             <span class="big">${mGap.toFixed(2)}</span>
-            <p>IMDb points lost after Michael leaves. The average goes from ${F.michaelRating.meanA.toFixed(2)} to ${F.michaelRating.meanB.toFixed(2)}, and viewers drop from ${fmt.m(F.michaelViewers.meanA)} to ${fmt.m(F.michaelViewers.meanB)}.</p>
+            <p>IMDb points lost after Michael leaves.<span class="tz-more"> The average goes from ${F.michaelRating.meanA.toFixed(2)} to ${F.michaelRating.meanB.toFixed(2)}, and viewers drop from ${fmt.m(F.michaelViewers.meanA)} to ${fmt.m(F.michaelViewers.meanB)}.</span></p>
             <span class="link-arrow">The Michael effect</span>
           </a>
           <a class="card teaser rv" style="--d:.06s" href="#/findings@twss">
             <span class="big">${F.twssCount}</span>
-            <p>Times someone says “that’s what she said” in the transcript. Episodes with one rate higher, until you notice ${esc(tw.k)} says ${tw.n} of them.</p>
+            <p>Times someone says “that’s what she said” in the transcript.<span class="tz-more"> Episodes with one rate higher, until you notice ${esc(tw.k)} says ${tw.n} of them.</span></p>
             <span class="link-arrow">That’s what she said</span>
           </a>
           <a class="card teaser rv" style="--d:.12s" href="#/findings@hour">
             <span class="big">${fmt.signed(hGap)}</span>
-            <p>How much higher hour-long episodes rate than regular ones. ${hGap > mGap ? `That’s a bigger gap than Michael leaving (${mGap.toFixed(2)})` : `Michael leaving is still the bigger gap (${mGap.toFixed(2)})`}.${hmGap != null ? ` Counting only episodes up to “${esc(E[F.goodbye].t)}”, ${hmGap > 0 ? `the hour-longs are still ${fmt.signed(hmGap)} ahead` : `the gap is ${fmt.num(hmGap)}`}.` : ''}</p>
+            <p>How much higher hour-long episodes rate than regular ones.<span class="tz-more"> ${hGap > mGap ? `That’s a bigger gap than Michael leaving (${mGap.toFixed(2)})` : `Michael leaving is still the bigger gap (${mGap.toFixed(2)})`}.${hmGap != null ? ` Counting only episodes up to “${esc(E[F.goodbye].t)}”, ${hmGap > 0 ? `the hour-longs are still ${fmt.signed(hmGap)} ahead` : `the gap is ${fmt.num(hmGap)}`}.` : ''}</span></p>
             <span class="link-arrow">Hour-long episodes</span>
           </a>
           <a class="card teaser rv" style="--d:.18s" href="#/findings@andy">
             <span class="big">${fmt.num(F.andy.all.r)}</span>
-            <p>Correlation between how much Andy talks in an episode and its rating. ${andySplit} and it shrinks to ${fmt.num(F.andy.early.r)} and ${fmt.num(F.andy.late.r)}. It’s mostly the era, not Andy.</p>
+            <p>Correlation between how much Andy talks in an episode and its rating.<span class="tz-more"> ${andySplit} and it shrinks to ${fmt.num(F.andy.early.r)} and ${fmt.num(F.andy.late.r)}. It’s mostly the era, not Andy.</span></p>
             <span class="link-arrow">The Andy problem</span>
           </a>
         </div>
         <div class="grid g-7-5 mt2 home-nugget-row">
           ${nugget(D)}
-          <div class="sticky-note rv home-note" style="--d:.1s">Michael has <b>${fmt.int(mich.lines)}</b> lines in ${mich.episodes} episodes.<br>${esc(D.byLines[1].key)}, next on the list, has ${fmt.int(D.byLines[1].lines)}.</div>
+          <div class="sticky-note rv home-note" style="--d:.1s">${charA(D, mich.key)} has <b>${fmt.int(mich.lines)}</b> lines in ${mich.episodes} episodes.<br>${charA(D, D.byLines[1].key)}, next on the list, has ${fmt.int(D.byLines[1].lines)}.</div>
         </div>
       </div>
     </section>
@@ -251,22 +285,22 @@ function nugget(D) {
   const ph = (label) => D.phrases.find((p) => p.label === label)?.speakers[0];
   const beets = ph('beet or beets'), cornell = ph('Cornell'), wuphf = ph('WUPHF');
   const facts = [
-    beets && `${esc(beets.k)} says “beet” or “beets” ${fmt.times(beets.n)}.`,
-    cornell && `${esc(cornell.k)} brings up Cornell ${fmt.times(cornell.n)}.`,
-    wuphf && `${esc(wuphf.k)} says “WUPHF” ${fmt.times(wuphf.n)}, which is ${wuphf.n} more than anyone asked for.`,
+    beets && `${charA(D, beets.k)} says “<a href="${esc(searchHref('beet'))}">beet</a>” or “beets” ${fmt.times(beets.n)}.`,
+    cornell && `${charA(D, cornell.k)} brings up <a href="${esc(searchHref('Cornell'))}">Cornell</a> ${fmt.times(cornell.n)}.`,
+    wuphf && `${charA(D, wuphf.k)} says “<a href="${esc(searchHref('WUPHF'))}">WUPHF</a>” ${fmt.times(wuphf.n)}, which is ${wuphf.n} more than anyone asked for.`,
   ].filter(Boolean).join(' ');
   let lead = '';
   if (bb && it && bb.n === 1 && it.n === 1 && bb.ep === it.ep && bb.ep != null) {
     const ep = D.episodes[bb.ep];
     // Both lines sit in the transcript's opening rows of Product Recall (rows 5 and 8), the scene where Jim dresses as Dwight.
     const ql = (q) => `“<a href="${esc(searchHref(q.q))}">${esc(q.label)}</a>”`;
-    lead = `<p><strong>Two of the most quoted lines in the show are each said exactly once, in the same scene.</strong> ${ql(bb)} and ${ql(it)} both come from the opening scene of ${epA(ep)}: ${esc(bb.who)} dressed as Dwight, and ${esc(it.who)} not enjoying it.</p>`;
+    lead = `<p><strong>Two of the most quoted lines in the show are each said exactly once, in the same scene.</strong> ${ql(bb)} and ${ql(it)} both come from the opening scene of ${epA(ep)}: ${charA(D, bb.who)} dressed as Dwight, and ${charA(D, it.who)} not enjoying it.</p>`;
   } else if (bb && bb.ep != null) {
-    lead = `<p><strong>“Bears. Beets. Battlestar Galactica.”</strong> is said ${fmt.times(bb.n)}, by ${esc(bb.who)}, in ${epA(D.episodes[bb.ep])}.</p>`;
+    lead = `<p><strong>“Bears. Beets. Battlestar Galactica.”</strong> is said ${fmt.times(bb.n)}, by ${charA(D, bb.who)}, in ${epA(D.episodes[bb.ep])}.</p>`;
   }
   const mugLine = mug && mug.n === 0 ? ' Nobody ever says “World’s best boss” out loud. It’s only on the mug.' : '';
   if (!lead && !facts) return '';
-  return `<div class="prose rv home-nugget">${lead}<p>${facts}${mugLine} <a href="#/dialogue">Search every line yourself.</a></p></div>`;
+  return `<div class="prose rv home-nugget">${lead}<p>${facts}${mugLine} <a href="${PG.dialogue.h}">Search every line yourself.</a></p></div>`;
 }
 
 // ---------------------------------------------------------------- home: this week in Office history
@@ -341,39 +375,20 @@ function thisWeek(D, now = new Date()) {
   </section>`;
 }
 
-// ---------------------------------------------------------------- home: things to play with
+// ---------------------------------------------------------------- home: the whole site
 
-function playRow(D) {
-  const E = D.episodes;
-  const mich = D.char.Michael;
-  const oneIn = Math.round(100 / mich.share);
-  const apol = (D.dundies || []).find((d) => d.id === 'most-apologetic');
-  const says = (c) => (c.aSays >= c.bSays ? { who: c.a, whom: c.b, n: c.aSays } : { who: c.b, whom: c.a, n: c.bSays });
-  const cs = (D.couples || []).map((c) => ({ c, ...says(c) })).sort((a, b) => b.n - a.n);
-  const jp = cs.find((x) => [x.c.a, x.c.b].sort().join() === 'Jim,Pam');
-  const loud = cs[0];
-  const { worst: lows } = extremes(E);
-  // Plain quoted titles here: the whole card is already a link.
-  const qt = (e) => `“${esc(e.t)}”`;
-  const lowText = lows.length === 1 ? `${qt(lows[0])} is alone at the bottom, at ${lows[0].r.toFixed(1)}.` : `${join(lows.map(qt))} share the bottom, at ${lows[0].r.toFixed(1)}.`;
-  const cards = [
-    { h: '#/quiz/daily', t: 'Who Said It?', big: fmt.pct(mich.share, 0), p: `of the show’s lines are Michael’s, so guessing “Michael” every time gets you about one in ${nw(oneIn)}. Five lines a day. Try to do better.`, go: 'Play today’s five' },
-    D.dundies?.length && { h: apol ? '#/dundies@most-apologetic' : '#/dundies', t: 'The Dundies', big: D.dundies.length, p: `awards, handed out by the data instead of Michael. ${apol ? 'This year’s Dundie for Most Apologetic goes to…' : ''}`, go: 'Open the envelopes' },
-    loud && { h: '#/couples', t: 'Couples Discount', big: fmt.int(loud.n), p: `times ${esc(loud.who)} says “${esc(loud.whom)}”.${jp && jp !== loud ? ` ${esc(jp.who)} says “${esc(jp.whom)}” ${fmt.times(jp.n)}. The show’s most intense pair isn’t Jim and Pam.` : ''}`, go: 'See the ships' },
-    { h: '#/episodes', t: 'Every episode, ranked', big: E.length, p: `episodes, best to worst, ties and all. ${lowText}`, go: 'See the list' },
-  ].filter(Boolean);
-  return `<section class="section play">
+// Every top-level page, in the nav's groups and order, with the one line sitemap.js gives each.
+function directory() {
+  return `<section class="section dir">
     <div class="wrap">
       <div class="section-head rv">
-        <div><p class="eyebrow">Play</p><h2>Things to do besides read.</h2></div>
+        <div><p class="eyebrow">The whole site</p><h2>Where everything is.</h2></div>
       </div>
-      <div class="grid g4 play-grid">${cards.map((c, i) => `
-        <a class="card teaser play-card rv" style="--d:${(i * 0.06).toFixed(2)}s" href="${c.h}">
-          <span class="play-t">${esc(c.t)}</span>
-          <span class="big">${c.big}</span>
-          <p>${c.p}</p>
-          <span class="link-arrow">${esc(c.go)}</span>
-        </a>`).join('')}
+      <div class="dir-grid">${GROUPS.map((g, i) => `
+        <div class="dir-g rv" style="--d:${(i * 0.06).toFixed(2)}s">
+          <h3 class="dir-h">${esc(g.name)}</h3>
+          ${g.pages.map((p) => `<a class="dir-row" href="${p.h}"><span class="dir-n">${esc(p.name)}</span><span class="dir-s">${esc(p.sub)}</span></a>`).join('')}
+        </div>`).join('')}
       </div>
     </div>
   </section>`;
@@ -404,8 +419,8 @@ export function seasons(D) {
   const without = (sbS.avgViewers * sbS.episodes - sb.v) / (sbS.episodes - 1);
   const rankWithout = 1 + S.filter((s) => s !== sbS && s.avgViewers > without).length;
   const viewLine = byView[0] === sbS && rankWithout > 1
-    ? `Season ${sbS.n} drew the most viewers, but without ${epA(sb)}, which aired after the Super Bowl, it would rank ${fmt.ordinal(rankWithout)}.`
-    : `Season ${byView[0].n} drew the most viewers.`;
+    ? `${seaA(sbS.n, `Season ${sbS.n}`)} drew the most viewers, but without ${epA(sb)}, which aired after the Super Bowl, it would rank ${fmt.ordinal(rankWithout)}.`
+    : `${seaA(byView[0].n, `Season ${byView[0].n}`)} drew the most viewers.`;
 
   // Spread: how far apart the best and worst episodes of each season are.
   const bySd = [...S].sort((a, b) => b.sd - a.sd);
@@ -424,8 +439,8 @@ export function seasons(D) {
   if (lastM < S.length) {
     const deltas = shareSeries.filter((x) => x.name !== 'Michael').map((x) => ({ name: x.name, d: x.values[lastM] - x.values[lastM - 1] })).sort((a, b) => b.d - a.d);
     const mDrop = D.char.Michael.perSeasonShare[lastM - 1] - D.char.Michael.perSeasonShare[lastM];
-    const nm = (x) => (x.name === 'Everyone else' ? 'everyone else' : esc(x.name));
-    shareNote = `From season ${lastM} to ${lastM + 1}, Michael’s share drops by ${mDrop.toFixed(0)} points, and most of it goes to ${nm(deltas[0])} (+${deltas[0].d.toFixed(1)}) and ${nm(deltas[1])} (+${deltas[1].d.toFixed(1)}).`;
+    const nm = (x) => (x.name === 'Everyone else' ? 'everyone else' : charA(D, x.name));
+    shareNote = `From ${seaA(lastM)} to ${seaA(lastM + 1, String(lastM + 1))}, ${charA(D, 'Michael')}’s share drops by ${mDrop.toFixed(0)} points, and most of it goes to ${nm(deltas[0])} (+${deltas[0].d.toFixed(1)}) and ${nm(deltas[1])} (+${deltas[1].d.toFixed(1)}).`;
   }
   const pctTxt = (v) => (v > 0 && v < 1 ? '<1%' : `${v.toFixed(0)}%`);
 
@@ -435,19 +450,20 @@ export function seasons(D) {
     <section class="wrap page-head">
       <p class="eyebrow">Seasons</p>
       <h1>${cap(nw(S.length))} seasons, <em>side by side.</em></h1>
-      <p class="lede">Season ${bestS.n} has the best average rating, ${bestS.avgRating.toFixed(2)}, and season ${worstS.n} the worst, ${worstS.avgRating.toFixed(2)}. ${viewLine}</p>
+      <p class="lede">${seaA(bestS.n, `Season ${bestS.n}`)} has the best average rating, ${bestS.avgRating.toFixed(2)}, and ${seaA(worstS.n)} the worst, ${worstS.avgRating.toFixed(2)}. ${viewLine}</p>
     </section>
     <section class="wrap">
+      ${seasonJump(D)}
       <div class="season-rail">${S.map((s, i) => seasonCard(s, D, i)).join('')}</div>
     </section>
     <section class="section wrap">
       <div class="card rv">
         <div class="card-head">
           <div><h3 class="card-title">Every episode, by season</h3><p class="card-sub">Each dot is an episode. The shaded band is the middle half of the season, and the dark tick is the median.</p></div>
-          <a class="link-arrow small" href="#/episodes">See all ${E.length}, ranked</a>
+          <a class="link-arrow small" href="${PG.episodes.h}">${esc(PG.episodes.name)}</a>
         </div>
         <div id="c-strip"></div>
-        <p class="small muted mt sp-note">Season ${wide.n} is the most spread out (SD ${wide.sd.toFixed(2)}), from ${join(wideEx.worst.map(epA))} at ${wideEx.worst[0].r.toFixed(1)} to ${join(wideEx.best.map(epA))} at ${wideEx.best[0].r.toFixed(1)}. Seasons ${join(tight.map((s) => String(s.n)))} are the tightest, ${tLo.toFixed(2)} to ${tHi.toFixed(2)}. Season ${medBest.n} has the best median, ${medBest.median.toFixed(1)}.</p>
+        <p class="small muted mt sp-note">${seaA(wide.n, `Season ${wide.n}`)} is the most spread out (SD ${wide.sd.toFixed(2)}), from ${join(wideEx.worst.map(epA))} at ${wideEx.worst[0].r.toFixed(1)} to ${join(wideEx.best.map(epA))} at ${wideEx.best[0].r.toFixed(1)}. Seasons ${join(tight.map((s) => seaA(s.n, String(s.n))))} are the tightest, ${tLo.toFixed(2)} to ${tHi.toFixed(2)}. ${seaA(medBest.n, `Season ${medBest.n}`)} has the best median, ${medBest.median.toFixed(1)}.</p>
       </div>
       <div class="grid g2 mt">
         <div class="card rv">
@@ -458,13 +474,13 @@ export function seasons(D) {
         <div class="card rv" style="--d:.06s">
           <h3 class="card-title">Share of each season’s dialogue</h3>
           ${shareNote ? `<p class="card-sub">${shareNote}</p>` : ''}
-          <div class="legend">${shareSeries.map((x) => `<span><i class="sq" style="background:${x.color}"></i>${esc(x.name)}</span>`).join('')}</div>
+          <div class="legend">${shareSeries.map((x) => `<span><i class="sq" style="background:${x.color}"></i>${charA(D, x.name)}</span>`).join('')}</div>
           <div id="c-share"></div>
         </div>
       </div>
       <div class="mt">
         ${tableView([
-          { h: 'Season', k: 'n' }, { h: 'Episodes', k: 'episodes', r: 1 }, { h: 'Avg IMDb', f: (r) => r.avgRating.toFixed(2), r: 1 },
+          { h: 'Season', f: (r) => seaA(r.n, String(r.n)) }, { h: 'Episodes', k: 'episodes', r: 1 }, { h: 'Avg IMDb', f: (r) => r.avgRating.toFixed(2), r: 1 },
           { h: 'Median', f: (r) => r.median.toFixed(2), r: 1 }, { h: 'SD', f: (r) => r.sd.toFixed(2), r: 1 },
           { h: 'Avg viewers', f: (r) => fmt.m(r.avgViewers), r: 1 }, { h: 'Lines', f: (r) => fmt.int(r.lines), r: 1 }, { h: 'TWSS', k: 'twss', r: 1 },
           ...shareSeries.map((x) => ({ h: x.name, f: (r) => pctTxt(x.values[r.n - 1]), r: 1 })),
@@ -495,17 +511,18 @@ export function season(D, n) {
   const nHour = eps.filter((e) => e.hour).length;
   const stream = streamCount(eps);
   const pairs = [...new Set(eps.filter((e) => e.approx).map(partBase))];
+  const linkTo = (e, text) => `<a href="#/episode/${e.id}">${esc(text)}</a>`;
   const epNote = nHour
-    ? `${nHour === 1 ? 'One hour-long' : `${cap(nw(nHour))} hour-longs`}, so ${stream} on streaming`
-    : pairs.length ? `${join(pairs.map(esc))} each aired as one hour but count as two` : 'All half-hour';
+    ? `<a href="#/findings@hour">${nHour === 1 ? 'One hour-long' : `${cap(nw(nHour))} hour-longs`}</a>, so ${stream} on streaming`
+    : pairs.length ? `${join(pairs.map((t) => linkTo(eps.find((e) => e.approx && partBase(e) === t), t)))} each aired as one hour but count as two` : 'All half-hour';
   const twEps = eps.filter((e) => e.twss);
   const twWiki = eps.filter((e) => e.twssWiki && !e.twss);
   const twNote = (!s.twss ? 'Not once in the transcript'
-    : twEps.length === 1 ? `${s.twss === 1 ? 'Once' : 'All of them'}, in ${esc(twEps[0].t)}`
+    : twEps.length === 1 ? `${s.twss === 1 ? 'Once' : 'All of them'}, in ${linkTo(twEps[0], twEps[0].t)}`
     : `Times in the transcript, across ${twEps.length} episodes`)
     + (twWiki.length ? `. The fan wiki lists ${twWiki.length === 1 ? 'one more episode' : `${nw(twWiki.length)} more episodes`}, flagged with a dashed outline` : '');
   // Niagara and The Delivery carry one viewer figure for the whole hour, on both halves.
-  const peak = viewMax.approx ? `${esc(partBase(viewMax))}, ${fmt.m(viewMax.v)} for the hour` : `${esc(viewMax.t)}, ${fmt.m(viewMax.v)}`;
+  const peak = viewMax.approx ? `${linkTo(viewMax, partBase(viewMax))}, ${fmt.m(viewMax.v)} for the hour` : `${linkTo(viewMax, viewMax.t)}, ${fmt.m(viewMax.v)}`;
 
   // First lines from anyone with a real part (150+ lines) who starts talking this season.
   const fresh = n > 1 ? D.characters.filter((c) => E[c.first].s === n && c.lines > 150) : [];
@@ -532,13 +549,13 @@ export function season(D, n) {
       <div class="pills scroll season-pills">${D.seasons.map((x) => `<a class="pill ${x.n === n ? 'on' : ''}" href="#/season/${x.n}"${x.n === n ? ' aria-current="page"' : ''}>${x.n}</a>`).join('')}</div>
     </div></nav>
     <section class="wrap page-head">
-      <div class="crumbs"><a href="#/seasons">Seasons</a><span>/</span><span>Season ${n}</span></div>
+      <div class="crumbs">${pageA('seasons')}<span>/</span><span>Season ${n}</span></div>
       <div class="season-hero">
         <span class="giant" aria-hidden="true">${n}</span>
         <div>
           <p class="eyebrow">${yearSpan(s.year, s.endYear)}</p>
           <h1 style="font-size:clamp(40px,6vw,72px)">Season ${n}</h1>
-          <p class="lede">${esc(BLURB[n](D, s))}</p>
+          <p class="lede">${BLURB[n](D, s)}</p>
         </div>
       </div>
     </section>
@@ -548,13 +565,14 @@ export function season(D, n) {
         <div class="stat"><div class="stat-label">Average IMDb</div><div class="stat-value">${count(s.avgRating, 2)}</div><div class="stat-note ${s.avgRating >= showAvg ? 'delta-up' : 'delta-down'}">${fmt.signed(s.avgRating - showAvg)} vs the show</div></div>
         <div class="stat"><div class="stat-label">Average viewers</div><div class="stat-value">${count(s.avgViewers, 1)}<small>M</small></div><div class="stat-note">Peak: ${peak}</div></div>
         <div class="stat"><div class="stat-label">Lines spoken</div><div class="stat-value">${count(s.lines)}</div><div class="stat-note">${fmt.int(s.lines / s.episodes)} per episode</div></div>
-        <div class="stat"><div class="stat-label">That’s what she said</div><div class="stat-value">${small(s.twss)}</div><div class="stat-note">${twNote}</div></div>
+        <div class="stat"><div class="stat-label">${s.twss ? '<a href="#/findings@twss">That’s what she said</a>' : 'That’s what she said'}</div><div class="stat-value">${small(s.twss)}</div><div class="stat-note">${twNote}</div></div>
       </div>
     </section>
     <section class="section wrap">
       <div class="card rv">
         <div class="card-head">
           <div><h3 class="card-title">Every episode in season ${n}</h3><p class="card-sub">IMDb ratings, numbered the way streaming does it.</p></div>
+          <a class="link-arrow small" href="${PG.episodes.h}@s=${n}">Season ${n}, ranked</a>
         </div>
         <div class="bw-list">${bw('Best', best)}${bw('Worst', worst)}</div>
         <div id="lolli"></div>
@@ -581,7 +599,7 @@ export function season(D, n) {
       <div class="ep-list rv">${eps.map((e) => epRow(e, D)).join('')}</div>
       <div class="pager">
         ${prev ? `<a href="#/season/${prev.n}"><small>Previous</small><span>Season ${prev.n}</span></a>` : '<span style="flex:1"></span>'}
-        ${next ? `<a class="next" href="#/season/${next.n}"><small>Next</small><span>Season ${next.n}</span></a>` : `<a class="next" href="#/episodes"><small>Next</small><span>Every episode, ranked</span></a>`}
+        ${next ? `<a class="next" href="#/season/${next.n}"><small>Next</small><span>Season ${next.n}</span></a>` : `<a class="next" href="${PG.episodes.h}"><small>Next</small><span>${esc(PG.episodes.name)}</span></a>`}
       </div>
     </section>`,
     after() { lollipops($('#lolli'), eps, { avg: s.avgRating, label: `Season ${n} episode ratings` }); },
@@ -596,7 +614,38 @@ const METRICS = {
   vs: { label: 'Vs its season', get: null, word: 'rating against its own season' },
   v: { label: 'Viewers', get: (e) => e.v, word: 'US viewers' },
 };
-const RK_DEFAULT = { sort: 'r', desc: true, seasons: [], era: 'all', hour: false };
+const RK_DEFAULT = { sort: 'r', desc: true, seasons: [], era: 'all', hour: false, who: '' };
+
+// The sort and the filters live in the address, after the "@": #/episodes@sort=vs&order=low&s=8,9&era=after&hour=1&with=pam
+// Anything left out is the default, so other pages can link to "season 3, ranked" or "every episode with Pam".
+function rkRead(D, hash = location.hash) {
+  const RK = { ...RK_DEFAULT, seasons: [] };
+  const at = hash.indexOf('@');
+  if (at < 0) return RK;
+  let q = hash.slice(at + 1);
+  try { q = decodeURIComponent(q); } catch (err) { /* a stray % in a hand-typed URL */ }
+  for (const part of q.split('&')) {
+    const [k, v = ''] = part.split('=');
+    if (k === 'sort' && Object.hasOwn(METRICS, v)) RK.sort = v;
+    else if (k === 'order') RK.desc = v !== 'low';
+    else if (k === 's') RK.seasons = [...new Set(v.split(',').map(Number).filter((n) => D.seasons[n - 1]))].sort((a, b) => a - b);
+    else if (k === 'era' && (v === 'with' || v === 'after')) RK.era = v;
+    else if (k === 'hour') RK.hour = v === '1';
+    else if (k === 'with' && Object.hasOwn(D.charSlug, v)) RK.who = v;
+  }
+  if (RK.seasons.length === D.seasons.length) RK.seasons = [];
+  return RK;
+}
+function rkAddress(RK) {
+  const q = [];
+  if (RK.sort !== RK_DEFAULT.sort) q.push(`sort=${RK.sort}`);
+  if (!RK.desc) q.push('order=low');
+  if (RK.seasons.length) q.push(`s=${[...RK.seasons].sort((a, b) => a - b).join(',')}`);
+  if (RK.era !== 'all') q.push(`era=${RK.era}`);
+  if (RK.hour) q.push('hour=1');
+  if (RK.who) q.push(`with=${RK.who}`);
+  return `${PG.episodes.h}${q.length ? `@${q.join('&')}` : ''}`;
+}
 
 export function episodes(D) {
   const E = D.episodes;
@@ -611,20 +660,16 @@ export function episodes(D) {
     ranks[k] = new Map(E.map((e) => [e.id, rankOf(E, e, g)]));
   }
 
-  // The filters live in this page's history entry: Back from an episode brings them back,
-  // and any fresh link to the list starts from the default.
-  const RK = { ...RK_DEFAULT, seasons: [] };
+  // The sort and filters come from the address, and every change is written back to it (replaceState, so Back
+  // doesn't step through each tap). The history entry keeps a copy, plus which row was opened: Back from an
+  // episode lands on the same list with that row where it was.
+  const RK = rkRead(D);
   const saved = history.state && history.state.rk;
-  if (saved && METRICS[saved.sort]) {
-    RK.sort = saved.sort;
-    RK.desc = saved.desc !== false;
-    RK.seasons = Array.isArray(saved.seasons) ? saved.seasons.filter((n) => S[n - 1]) : [];
-    RK.era = ['all', 'with', 'after'].includes(saved.era) ? saved.era : 'all';
-    RK.hour = !!saved.hour;
-  }
-  const save = () => {
-    try { history.replaceState({ ...(history.state || {}), rk: { ...RK, seasons: [...RK.seasons] } }, ''); } catch (err) { /* state is a nicety */ }
+  const save = (anchor) => {
+    const at = rkAddress(RK);
+    try { history.replaceState({ ...(history.state || {}), rk: { ...RK, seasons: [...RK.seasons], at, anchor } }, '', at); } catch (err) { /* state is a nicety */ }
   };
+  const who = () => (RK.who ? D.charSlug[RK.who] : null);
 
   const { best: tops, worst: lows } = extremes(E);
   const asc = [...E].sort((a, b) => a.r - b.r);
@@ -677,15 +722,27 @@ export function episodes(D) {
     const list = $('#rk-list');
     if (!list) return;
     const g = get(RK.sort);
+    const w = who();
     const rows = E.filter((e) => (!RK.seasons.length || RK.seasons.includes(e.s))
       && (RK.era === 'all' || (RK.era === 'with' ? e.id <= G : e.id > G))
-      && (!RK.hour || e.hour));
+      && (!RK.hour || e.hour)
+      && (!w || e.c[w.code] > 0));
     rows.sort((a, b) => (RK.desc ? g(b) - g(a) : g(a) - g(b)) || (RK.desc ? b.r - a.r : a.r - b.r) || a.id - b.id);
     if (rows.length) list.replaceChildren(...rows.map(rowFor));
     else list.innerHTML = '<p class="muted rk-empty">Nothing matches all of that.</p>';
-    const sea = RK.seasons.length ? ` in season${RK.seasons.length > 1 ? 's' : ''} ${join([...RK.seasons].sort((a, b) => a - b).map(String))}` : '';
+    const picked = [...RK.seasons].sort((a, b) => a - b);
+    const sea = picked.length ? `${w ? ',' : ''} in season${picked.length > 1 ? 's' : ''} ${join(picked.map(String))}` : '';
     const era = RK.era === 'with' ? ', with Michael' : RK.era === 'after' ? ', after Michael' : '';
-    $('#rk-count').textContent = `${fmt.plural(rows.length, 'episode')}${sea}${era}${RK.hour ? ', hour-long only' : ''}. Sorted by ${METRICS[RK.sort].word}, ${RK.desc ? 'highest' : 'lowest'} first. Ranks are out of all ${E.length}.`;
+    $('#rk-count').innerHTML = `${fmt.plural(rows.length, 'episode')}${w ? ` where ${charA(D, w.key)} speaks` : ''}${sea}${era}${RK.hour ? ', hour-long only' : ''}. Sorted by ${METRICS[RK.sort].word}, ${RK.desc ? 'highest' : 'lowest'} first. Ranks are out of all ${E.length}.`;
+    // The same thing in one line, for the bar that stays under the header while the list scrolls.
+    const pin = $('#rk-pin-t');
+    // The sort first, then the filters, then the count: on a narrow phone the end of the line is what gets cut.
+    if (pin) pin.textContent = [`${METRICS[RK.sort].label}, ${RK.desc ? 'highest' : 'lowest'} first`,
+      w && `With ${w.key}`, picked.length && `Season${picked.length > 1 ? 's' : ''} ${picked.join(', ')}`,
+      RK.era === 'with' ? 'Michael era' : RK.era === 'after' ? 'After Michael' : '', RK.hour && 'Hour-long',
+      fmt.plural(rows.length, 'episode')].filter(Boolean).join(' · ');
+    const wr = $('#rk-with-row');
+    if (wr) wr.hidden = !w;
     // Keep the controls in step with the state.
     $$('#rk-sort button').forEach((b) => { const on = b.dataset.v === RK.sort; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
     $$('#rk-era button').forEach((b) => { const on = b.dataset.v === RK.era; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
@@ -706,17 +763,23 @@ export function episodes(D) {
   const wikiOnly = E.some((e) => e.twssWiki && !e.twss);
 
   return {
-    title: 'Every episode, ranked',
+    title: PG.episodes.name,
     html: `
     <section class="wrap page-head">
-      <div class="crumbs"><a href="#/seasons">Seasons</a><span>/</span><span>Every episode, ranked</span></div>
+      <div class="crumbs">${pageA('seasons')}<span>/</span><span>${esc(PG.episodes.name)}</span></div>
       <p class="eyebrow">All ${E.length}, ties and all</p>
       <h1>Every episode, <em>ranked.</em></h1>
       <p class="lede">${lede}</p>
       <p class="small muted rk-sub">${lede2 ? `${lede2} ` : ''}Against its own season’s average, ${epA(vsTop)} is furthest above (${fmt.signed(vs(vsTop))}) and ${epA(vsLow)} furthest below (${fmt.signed(vs(vsLow))}).</p>
     </section>
+    <div class="rk-pin" id="rk-pin" hidden><div class="rk-pin-in"><div class="wrap">
+      <button type="button" class="rk-pin-b" id="rk-pin-b"><span class="rk-pin-t" id="rk-pin-t"></span><span class="rk-pin-go">Change</span></button>
+    </div></div></div>
     <section class="wrap">
-      <div class="card rk-controls rv">
+      <div class="card rk-controls rv" id="rk-controls">
+        ${who() ? `<div class="rk-row" id="rk-with-row"><span class="rk-label">With</span>
+          <button type="button" class="pill rk-with" id="rk-with" aria-pressed="true" aria-label="Only episodes where ${esc(who().key)} speaks. Remove this filter"><i class="dot" style="background:${color(who().key)}"></i>${esc(who().key)}<span aria-hidden="true">×</span></button>
+        </div>` : ''}
         <div class="rk-row"><span class="rk-label">Start with</span>
           <div class="pills" id="rk-preset">
             <button type="button" class="pill" data-v="best" aria-pressed="false">Best</button>
@@ -729,7 +792,7 @@ export function episodes(D) {
           <button type="button" class="pill rk-dir" id="rk-dir">Highest first</button>
         </div>
         <div class="rk-row"><span class="rk-label">Season</span>
-          <div class="pills scroll" id="rk-season" role="group" aria-label="Seasons"><button type="button" class="pill" data-v="0" aria-pressed="true">All</button>${S.map((s) => `<button type="button" class="pill" data-v="${s.n}" aria-pressed="false" aria-label="Season ${s.n}">${s.n}</button>`).join('')}</div>
+          <div class="pills scroll rk-seasons" id="rk-season" role="group" aria-label="Seasons"><button type="button" class="pill" data-v="0" aria-pressed="true">All</button>${S.map((s) => `<button type="button" class="pill" data-v="${s.n}" aria-pressed="false" aria-label="Season ${s.n}">${s.n}</button>`).join('')}</div>
         </div>
         <div class="rk-row"><span class="rk-label">Era</span>
           ${toggle('rk-era', [['all', 'All'], ['with', 'With Michael'], ['after', 'After']], RK.era)}
@@ -739,20 +802,18 @@ export function episodes(D) {
       <p class="small muted rk-count" id="rk-count" aria-live="polite"></p>
       <div class="legend seq-legend rk-legend">${stripLegend(D, E, 'Each strip shows who talked most.')}${wikiOnly ? '<span><span class="flag wiki">TWSS</span>Dashed: only the fan wiki has it</span>' : ''}</div>
       <div class="ep-list ranked" id="rk-list"></div>
-      <div class="pager">
-        <a href="#/seasons"><small>Back to</small><span>All seasons</span></a>
-        <a class="next" href="#/findings"><small>Next</small><span>What it all means</span></a>
-      </div>
     </section>`,
     after() {
       // Remember which row was opened and where it sat, so Back puts that row back under the reader's thumb.
       // (Rows far off screen skip layout, so a plain scroll position would only be close.)
+      // Any link in the row counts: the episode, or a director or writer in its credit line.
       $('#rk-list')?.addEventListener('click', (ev) => {
-        const a = ev.target.closest('a.ep-row'); if (!a) return;
-        const id = +a.getAttribute('href').split('/').pop();
-        try { history.replaceState({ ...(history.state || {}), rk: { ...RK, seasons: [...RK.seasons], anchor: { id, top: Math.round(a.getBoundingClientRect().top) } } }, ''); } catch (err) { /* state is a nicety */ }
+        const row = ev.target.closest('.ep-row');
+        if (!row || !ev.target.closest('a')) return;
+        const id = +row.querySelector('.ep-link').getAttribute('href').split('/').pop();
+        save({ id, top: Math.round(row.getBoundingClientRect().top) });
       });
-      const anchor = saved && saved.anchor;
+      const anchor = saved && saved.at === rkAddress(RK) ? saved.anchor : null;
       $('#rk-sort')?.addEventListener('click', (ev) => {
         const b = ev.target.closest('button'); if (!b) return;
         if (RK.sort === b.dataset.v) RK.desc = !RK.desc; else { RK.sort = b.dataset.v; RK.desc = true; }
@@ -775,7 +836,32 @@ export function episodes(D) {
         Object.assign(RK, { ...p, seasons: [...p.seasons] });
         draw();
       });
+      $('#rk-with')?.addEventListener('click', () => {
+        RK.who = '';
+        draw();
+        $('#rk-preset button')?.focus({ preventScroll: true });
+      });
       draw();
+
+      // The one-line summary shows once the controls have scrolled under the header, for as long as the list is
+      // on screen. Tapping it goes back up to the controls.
+      const pin = $('#rk-pin'), controls = $('#rk-controls'), listEl = $('#rk-list');
+      if (pin && controls && listEl && 'IntersectionObserver' in window) {
+        let past = false, inList = false;
+        const io = new IntersectionObserver((entries) => {
+          for (const en of entries) {
+            if (en.target === controls) past = !en.isIntersecting && en.boundingClientRect.bottom <= (en.rootBounds?.top ?? 0) + 1;
+            else inList = en.isIntersecting;
+          }
+          pin.hidden = !(past && inList);
+        }, { rootMargin: '-64px 0px 0px 0px' });
+        io.observe(controls);
+        io.observe(listEl);
+        $('#rk-pin-b').addEventListener('click', () => {
+          controls.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+          $('button', controls)?.focus({ preventScroll: true });
+        });
+      }
       if (anchor && nodes.has(anchor.id)) {
         // Two frames: the router restores its saved scroll position in the next one.
         requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -816,7 +902,9 @@ export function episode(D, id, lines) {
   const clean = E.filter((x) => !x.shuffled);
   const runRank = run ? rankOf(clean.filter((x) => x.run), e, (x) => x.run.n) : null;
   const scene = run ? (D.scenes || []).find((x) => x.ep === id && x.n === run.n) : null;
+  // The pair's own panel on the couples page, addressed like the ribbons on character pages: a-b in the order D.couples has them.
   const couple = run && (D.couples || []).find((c) => [c.a, c.b].sort().join() === [run.a, run.b].sort().join());
+  const coupleHref = couple ? `${PG.couples.h}@${slug(`${couple.a}-${couple.b}`)}` : '';
   const runRankTxt = runRank && runRank.n <= 20
     ? ` ${runRank.ties ? 'Tied for the' : 'The'} ${runRank.n === 1 ? '' : `${fmt.ordinal(runRank.n)} `}longest in the ${clean.length} episodes whose transcript is in order.`
     : '';
@@ -825,10 +913,10 @@ export function episode(D, id, lines) {
   const vsS = e.r - s.avgRating;
   const tiedWith = E.filter((x) => x !== e && tenths(x.r) === tenths(e.r));
   const facts = [
-    `${fmt.signed(vsS)} against the season ${e.s} average of ${s.avgRating.toFixed(2)}.`,
+    `${fmt.signed(vsS)} against the ${seaA(e.s)} average of ${s.avgRating.toFixed(2)}.`,
     tiedWith.length === 0 ? `The only episode rated ${e.r.toFixed(1)}.`
       : tiedWith.length <= 3 ? `Tied at ${e.r.toFixed(1)} with ${join(tiedWith.map(epA))}.`
-      : `Tied at ${e.r.toFixed(1)} with ${fmt.plural(tiedWith.length, 'other episode')}. <a href="#/episodes">See the list</a>.`,
+      : `Tied at ${e.r.toFixed(1)} with ${fmt.plural(tiedWith.length, 'other episode')}. <a href="${PG.episodes.h}">See the list</a>.`,
   ];
   if (e.votes) {
     const rv = rankOf(E, e, (x) => x.votes || 0);
@@ -837,10 +925,16 @@ export function episode(D, id, lines) {
   const shared = (list) => (list.filter((x) => x.v === e.v).length > 1 ? ', shared with its other half' : '');
   if (e.v === Math.max(...E.map((x) => x.v))) facts.push(`The most-watched episode of the whole show${shared(E)}.`);
   else if (e.v === Math.max(...sEps.map((x) => x.v))) facts.push(`The most-watched episode of season ${e.s}${shared(sEps)}.`);
+  // Two pages of this site are named after episodes. Those episodes point back at them.
+  if (e.t.endsWith('Dundies')) facts.push(`The transcript hands out its own: ${pageA('dundies')}.`);
+  if (e.t === PG.couples.name) facts.push(`A page here is named after this one: ${pageA('couples')}.`);
 
   let lede = `Directed by ${people(e.dir)}${stop(e.dir)} Written by ${people(e.wri)}${stop(e.wri)}`;
-  if (e.hour) lede += ' An hour-long episode.';
-  if (partner) lede += ` Part ${isPart2 ? 'two' : 'one'} of ${esc(base)}, which aired as one hour with ${epA(partner)}.`;
+  if (e.hour) lede += ' An <a href="#/findings@hour">hour-long</a> episode.';
+  if (partner) lede += ` Part ${isPart2 ? 'two' : 'one'} of ${esc(base)}, which <a href="#/findings@hour">aired as one hour</a> with ${epA(partner)}.`;
+
+  // Everyone with a page who has lines here but isn't one of the six in the charts.
+  const alsoHere = D.characters.filter((c) => e.c[c.code] > 0 && !e.top.some((t) => t.k === c.key)).sort((a, b) => e.c[b.code] - e.c[a.code]);
 
   // Episodes only the fan wiki flags have no count we can trust, so they show none.
   const twssNote = e.twss ? `${cap(fmt.times(e.twss))} in the transcript` : e.twssWiki ? 'None in the transcript, though the fan wiki lists this episode' : 'Not this time';
@@ -851,18 +945,18 @@ export function episode(D, id, lines) {
     title: e.t,
     html: `
     <section class="wrap page-head">
-      <div class="crumbs"><a href="#/seasons">Seasons</a><span>/</span><a href="#/season/${e.s}">Season ${e.s}</a><span>/</span><span>Episode ${esc(e.se)}</span></div>
+      <div class="crumbs">${pageA('seasons')}<span>/</span><a href="#/season/${e.s}">Season ${e.s}</a><span>/</span><span>Episode ${esc(e.se)}</span></div>
       <p class="eyebrow ep-eyebrow"><span>${epCode(e)} · ${fmt.date(e.date)}</span>${orig ? `<span class="ep-orig">(E${e.e} if hour-longs count as one episode)</span>` : ''}</p>
       <h1 style="font-size:clamp(40px,7vw,84px)">${esc(e.t)}</h1>
       <p class="lede">${lede}</p>
     </section>
     <section class="wrap">
       <div class="stats rv">
-        <div class="stat"><div class="stat-label">IMDb rating</div><div class="stat-value">${count(e.r, 1)}</div><div class="stat-note">${rShow.label} of ${E.length} overall, ${rSeason.label} of ${sEps.length} in season ${e.s}${e.votes ? `. ${fmt.int(e.votes)} votes` : ''}</div></div>
+        <div class="stat"><div class="stat-label">IMDb rating</div><div class="stat-value">${count(e.r, 1)}</div><div class="stat-note"><a href="${PG.episodes.h}">${rShow.label} of ${E.length}</a> overall, ${rSeason.label} of ${sEps.length} in ${seaA(e.s)}${e.votes ? `. ${fmt.int(e.votes)} votes` : ''}</div></div>
         <div class="stat"><div class="stat-label">US viewers</div><div class="stat-value">${count(e.v, 2)}<small>M</small></div><div class="stat-note ${e.v >= s.avgViewers ? 'delta-up' : 'delta-down'}">${fmt.signed(e.v - s.avgViewers)}M vs the season average${partner ? '. One figure for the whole hour' : ''}</div></div>
         <div class="stat"><div class="stat-label">Lines</div><div class="stat-value">${count(e.lines)}</div><div class="stat-note">${e.approx ? 'Approximate, from a split transcript' : `${e.speakers} different speakers`}</div></div>
         <div class="stat"><div class="stat-label">Words</div><div class="stat-value">${count(e.words)}</div><div class="stat-note">${(e.words / Math.max(1, e.lines)).toFixed(1)} per line</div></div>
-        <div class="stat"><div class="stat-label">That’s what she said</div><div class="stat-value">${small(e.twss || 0)}</div><div class="stat-note">${twssNote}</div></div>
+        <div class="stat"><div class="stat-label">${e.twss ? '<a href="#/findings@twss">That’s what she said</a>' : 'That’s what she said'}</div><div class="stat-value">${small(e.twss || 0)}</div><div class="stat-note">${twssNote}</div></div>
       </div>
     </section>
     <section class="section wrap">
@@ -891,27 +985,38 @@ export function episode(D, id, lines) {
             <h3 class="card-title">Share of the episode</h3>
             <p class="card-sub">Of ${fmt.int(total)} lines${e.approx ? ', approximately' : ''}.</p>
             ${hbars(e.top.map((t) => ({ label: t.k, v: (t.n / total) * 100, color: color(t.k), dot: color(t.k), k: t.k })), { fmtv: (v) => fmt.pct(v), href: (r) => (D.char[r.k] ? `#/character/${slug(r.k)}` : null) })}
+            ${alsoHere.length ? `<div class="ep-cast"><span class="ep-cast-h">Also talking</span>${alsoHere.map((c) => `<a class="chip" href="#/character/${slug(c.key)}">${esc(c.key)}<b>${e.c[c.code]}</b></a>`).join('')}</div>` : ''}
           </div>
           ${run ? `<div class="card rv ep-o5 ep-run" style="--d:.06s">
             <h3 class="card-title">Longest back-and-forth</h3>
             <p class="ep-run-who">${charA(D, run.a)} and ${charA(D, run.b)}, ${run.n} lines</p>
-            <p class="small muted ep-run-note">Nobody else gets a word in.${runRankTxt}${couple ? ` <a href="#/couples">More on these two</a>.` : ''}</p>
+            <p class="small muted ep-run-note">Nobody else gets a word in.${runRankTxt}${couple ? ` <a href="${coupleHref}">More on these two</a>.` : ''}</p>
             ${scene ? `<div class="script ep-run-lines">${scene.lines.slice(0, 4).map(([k, t]) => scriptLine([0, k, t])).join('')}</div>` : ''}
           </div>` : ''}
         </div>
       </div>
       <div class="card rv mt">
-        <h3 class="card-title">Season ${e.s} for context</h3>
+        <h3 class="card-title">${seaA(e.s, `Season ${e.s}`)} for context</h3>
         <p class="card-sub">This episode is the filled dot.</p>
         <div id="ctx"></div>
       </div>
       <div class="pager ep-pager">
         ${prev ? `<a href="#/episode/${prev.id}">${pg(prev, 'Previous')}</a>` : '<span style="flex:1"></span>'}
-        ${next ? `<a class="next" href="#/episode/${next.id}">${pg(next, 'Next')}</a>` : '<a class="next" href="#/episodes"><small>That’s all of them</small><span>Every episode, ranked</span></a>'}
+        ${next ? `<a class="next" href="#/episode/${next.id}">${pg(next, 'Next')}</a>` : `<a class="next" href="${PG.episodes.h}"><small>That’s all of them</small><span>${esc(PG.episodes.name)}</span></a>`}
       </div>
     </section>`,
     after() {
-      barcode($('#barcode'), e, D);
+      // charts.js draws the names in "Who talks when" as plain labels, and draws them again whenever the card
+      // changes width. Each time, the ones with a page become links, the same as the bars in the next card.
+      const bc = $('#barcode');
+      const linkNames = () => $$('.bn', bc).forEach((n) => {
+        const k = n.getAttribute('title');
+        if (!D.char[k] || n.querySelector('a')) return;
+        n.innerHTML = `<a href="#/character/${slug(k)}">${n.innerHTML}</a>`;
+      });
+      if (bc) new MutationObserver(linkNames).observe(bc, { childList: true });
+      barcode(bc, e, D);
+      linkNames();
       contextChart($('#ctx'), sEps, e);
       // Held now, not looked up when the script arrives: every episode page reuses these ids, so a slow
       // season file would otherwise write into whichever episode is showing by then.
@@ -999,13 +1104,30 @@ function contextChart(el, eps, cur) {
     eps.forEach((e, i) => {
       const cx = m.l + step * (i + 0.5);
       const me = e.id === cur.id;
-      body += `<a href="#/episode/${e.id}"><line x1="${cx}" x2="${cx}" y1="${H - m.b}" y2="${y(e.r)}" style="stroke:${me ? 'var(--accent)' : 'var(--line-2)'}" stroke-width="2"/>
-        <circle cx="${cx}" cy="${y(e.r)}" r="${me ? 7 : 4}" style="fill:${me ? 'var(--accent)' : 'var(--surface)'};stroke:var(--accent)" stroke-width="2"><title>${esc(e.t)} · ${e.r.toFixed(1)}</title></circle>
+      body += `<a href="#/episode/${e.id}" data-i="${i}" aria-label="${esc(e.t)}, ${e.r.toFixed(1)}"><line x1="${cx}" x2="${cx}" y1="${H - m.b}" y2="${y(e.r)}" style="stroke:${me ? 'var(--accent)' : 'var(--line-2)'}" stroke-width="2"/>
+        <circle cx="${cx}" cy="${y(e.r)}" r="${me ? 7 : 4}" style="fill:${me ? 'var(--accent)' : 'var(--surface)'};stroke:var(--accent)" stroke-width="2"/>
         <rect x="${cx - step / 2}" y="${m.t - 6}" width="${step}" height="${H - m.t - m.b + 6}" fill="transparent"/></a>`;
       if (me) body += `<text x="${Math.max(16, Math.min(W - 16, cx))}" y="${y(e.r) - 12}" text-anchor="middle" class="lbl-strong">${e.r.toFixed(1)}</text>`;
       if (step > 16 || me) body += `<text x="${cx}" y="${H - 6}" text-anchor="middle"${me ? ' class="lbl"' : ''}>${esc(e.se.split('-')[0])}</text>`;
     });
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Season ratings with this episode highlighted">${body}</svg>`;
+    // The columns are narrower than a thumb (about 12px in a 26-episode season on a phone), so a tap first says
+    // which episode it hit and the next tap opens it, like the other charts. They stay real links for the
+    // keyboard and for opening in a new tab.
+    el.querySelectorAll('a[data-i]').forEach((a) => {
+      const html = () => epTip(eps[+a.dataset.i]);
+      a.addEventListener('pointerenter', (ev) => { if (ev.pointerType === 'mouse') tip.show(html(), ev, a); });
+      a.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'mouse') tip.move(ev); });
+      a.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') tip.hide(); });
+      a.addEventListener('click', (ev) => {
+        const touch = ev.pointerType === 'touch' || ev.pointerType === 'pen' || (!ev.pointerType && matchMedia('(hover: none)').matches);
+        if (touch && tip.owner() !== a) {
+          ev.preventDefault();
+          nav.to = null; // the router marked this click as a trip; it isn't one yet
+          tip.show(`${html()}<div class="tm" style="margin-top:6px">Tap again to open</div>`, ev, a);
+        } else tip.hide();
+      });
+    });
   });
 }
 

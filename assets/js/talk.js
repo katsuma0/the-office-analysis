@@ -1,5 +1,6 @@
 import { $, $$, esc, fmt, slug, color, hbars, epCode, count } from './ui.js';
 import { columns, matrix, timeline, scatter, strip } from './charts.js';
+import { PAGES, OLD } from './sitemap.js';
 
 const SUGGEST = ['beets', 'Cornell', 'Scranton Strangler', 'pretzel', 'parkour', 'Michael Scarn', 'Bob Vance', 'boom roasted', 'scotts tots', 'Jell-O', 'I love you', 'the warehouse'];
 
@@ -21,6 +22,14 @@ const say = (s) => esc(s).replace(/\u2014/g, '--');
 // Episode titles in prose are italic, so "Goodbye, Michael" doesn't read as two items in a list.
 const ttl = (e) => `<a href="#/episode/${e.id}"><em>${esc(e.t)}</em></a>`;
 const charHref = (D, k) => (D.char[k] ? `#/character/${slug(k)}` : null);
+// One name per page, from the site map.
+const PG = Object.fromEntries(PAGES.map((p) => [p.key, p]));
+// A character's name, linked when they have a page. Only the main cast do.
+const charA = (D, k) => (D.char[k] ? `<a href="${charHref(D, k)}">${esc(k)}</a>` : esc(k));
+// Links each name the first time it comes up and prints it plain after that, so a paragraph never links someone twice.
+const linker = (D) => { const seen = new Set(); return (k) => (seen.has(k) ? esc(k) : (seen.add(k), charA(D, k))); };
+const coupleOf = (D, a, b) => (D.couples || []).find((c) => (c.a === a && c.b === b) || (c.a === b && c.b === a));
+const searchHref = (q) => `#/dialogue/q/${encodeURIComponent(q)}`;
 const pEq = (p) => { const s = pFmt(p); return s.startsWith('<') ? `p${NB}<${NB}${s.slice(2)}` : `p${NB}=${NB}${s}`; };
 const share = (v, d = 1) => fmt.pct(v * 100, d);
 const dot = (k) => `<i class="dot" style="background:${color(k)}"></i>`;
@@ -190,7 +199,7 @@ function quoteWall(D) {
     const shown = x.label;
     const tryQ = x.n ? asWritten(shown, x.q) : miss?.try;
     const link = e ? `<a href="#/episode/${e.id}">${esc(e.t)}</a>` : '';
-    const whoLine = !k ? '' : x.n > 1 ? `${dot(k)}${esc(k)}${solo ? ', every time' : ' says it most'}` : `${dot(k)}${esc(k)}${link || miss?.where ? ` · ${link || esc(miss.where)}` : ''}`;
+    const whoLine = !k ? '' : x.n > 1 ? `${dot(k)}${charA(D, k)}${solo ? ', every time' : ' says it most'}` : `${dot(k)}${charA(D, k)}${link || miss?.where ? ` · ${link || esc(miss.where)}` : ''}`;
     const all = x.n === 2 ? 'both' : 'all';
     let note = '';
     if (!x.n) note = `${esc(miss?.note || 'Not in the transcript.')}${miss?.try ? ' <span class="tk-try">Tap for the closest it gets.</span>' : ''}`;
@@ -199,7 +208,7 @@ function quoteWall(D) {
     const sr = `${stamp}${times && times !== x.n ? `, in ${fmt.plural(x.n, 'line')}` : ''}.`;
     return `<div class="tk-card rv${x.n ? '' : ' is-never'}${tryQ ? ' is-tap' : ''}" style="--d:${(Math.min(i, 8) * 0.04).toFixed(2)}s"${tryQ ? ` data-q="${esc(tryQ)}"` : ''}>
       <span class="tk-stamp" aria-hidden="true">${stamp}</span>
-      ${tryQ ? `<button type="button" class="tk-line">${say(shown)}<span class="tk-sr"> Search the script.</span></button>` : `<p class="tk-line">${say(shown)}</p>`}
+      ${tryQ ? `<button type="button" class="tk-line" aria-expanded="false">${say(shown)}<span class="tk-sr"> ${x.n === 1 ? 'Read the line.' : 'Read the lines.'}</span></button>` : `<p class="tk-line">${say(shown)}</p>`}
       <p class="tk-who">${whoLine}</p>
       ${note ? `<p class="tk-note">${note}</p>` : ''}
       <span class="tk-sr">${sr}</span>
@@ -234,12 +243,12 @@ function nickBoard(D) {
     const max = Math.max(1, ...nk.perSeason);
     const bars = nk.perSeason.map((v, s) => `<i style="height:${v ? Math.max(8, (v / max) * 100) : 0}%" title="Season ${s + 1}: ${v}"></i>`).join('');
     const tally = `${cap(fmt.times(nk.n))}${nk.lines !== nk.n ? ` in ${fmt.plural(nk.lines, 'line')}` : ''}. ${nk.n === nk.all ? 'Nobody else says it.' : `${fmt.int(nk.n)} of the show’s ${fmt.int(nk.all)}.`}`;
-    return `<button type="button" class="tk-nick rv" style="--cc:${color(nk.who)};--d:${(Math.min(i, 6) * 0.04).toFixed(2)}s" data-q="&quot;${esc(nk.nick)}&quot;">
+    return `<button type="button" class="tk-nick rv" aria-expanded="false" style="--cc:${color(nk.who)};--d:${(Math.min(i, 6) * 0.04).toFixed(2)}s" data-q="&quot;${esc(nk.nick)}&quot;">
       <span class="tk-nwho">${nickWho(nk)}</span>
       <span class="tk-nn">“${esc(nk.nick)}”</span>
       <span class="tk-nc">${tally}</span>
       <span class="tk-spark" aria-hidden="true">${bars}</span>
-      <span class="tk-nnote">${nickNote(nk)}<span class="tk-sr"> Search the script.</span></span>
+      <span class="tk-nnote">${nickNote(nk)}<span class="tk-sr"> ${nk.lines === 1 ? 'Read the line.' : 'Read the lines.'}</span></span>
     </button>`;
   }).join('');
 }
@@ -254,25 +263,27 @@ function answersProse(D) {
   const out = [];
 
   if (has('Jim', 'Pam')) {
+    const c = linker(D);
     const tp = top('Pam'), tj = top('Jim');
-    const head = tp[0].k === 'Jim' && tj[0].k === 'Pam' ? 'Jim and Pam answer each other first.' : tp[0].k === 'Jim' ? 'Jim answers Pam.' : `Pam gets ${tp[0].k} more than Jim.`;
-    out.push(`<p><strong>${head}</strong> When Pam finishes a line, ${tp[0].k} talks next ${share(tp[0].v)} of the time and ${tp[1].k} ${share(tp[1].v)}. When Jim finishes, it’s ${tj[0].k} ${share(tj[0].v)} and ${tj[1].k} ${share(tj[1].v)}.</p>`);
+    const head = tp[0].k === 'Jim' && tj[0].k === 'Pam' ? `${c('Jim')} and ${c('Pam')} answer each other first.` : tp[0].k === 'Jim' ? `${c('Jim')} answers ${c('Pam')}.` : `${c('Pam')} gets ${c(tp[0].k)} more than ${c('Jim')}.`;
+    out.push(`<p><strong>${head}</strong> When ${c('Pam')} finishes a line, ${c(tp[0].k)} talks next ${share(tp[0].v)} of the time and ${c(tp[1].k)} ${share(tp[1].v)}. When ${c('Jim')} finishes, it’s ${c(tj[0].k)} ${share(tj[0].v)} and ${c(tj[1].k)} ${share(tj[1].v)}.</p>`);
   }
 
   if (has('Michael')) {
     const others = keys.filter((k) => k !== 'Michael');
     const mine = others.filter((k) => top(k)[0].k === 'Michael');
     const ex = others.filter((k) => top(k)[0].k !== 'Michael');
-    const head = mine.length === others.length ? 'Michael answers everyone else.' : mine.length * 2 > others.length ? 'Michael answers most of the others.' : 'Michael answers some of the others.';
+    const c = linker(D);
+    const head = `${c('Michael')} answers ${mine.length === others.length ? 'everyone else' : mine.length * 2 > others.length ? 'most of the others' : 'some of the others'}.`;
     // Pairs who are each other's first answer get one clause.
     const used = new Set();
     const parts = [];
     for (const k of ex) {
       if (used.has(k)) continue;
       const [t1, t2] = top(k);
-      if (ex.includes(t1.k) && top(t1.k)[0].k === k && !used.has(t1.k)) { used.add(k); used.add(t1.k); parts.push(`${k} and ${t1.k}, who get each other`); continue; }
+      if (ex.includes(t1.k) && top(t1.k)[0].k === k && !used.has(t1.k)) { used.add(k); used.add(t1.k); parts.push(`${c(k)} and ${c(t1.k)}, who get each other`); continue; }
       used.add(k);
-      parts.push(t1.v - t2.v < 0.01 ? `${k}, who gets ${t1.k} by a hair over ${t2.k}` : `${k}, who gets ${t1.k} ${share(t1.v)} of the time`);
+      parts.push(t1.v - t2.v < 0.01 ? `${c(k)}, who gets ${c(t1.k)} by a hair over ${c(t2.k)}` : `${c(k)}, who gets ${c(t1.k)} ${share(t1.v)} of the time`);
     }
     const ms = D.char.Michael?.perSeasonShare || [];
     const his = ms.map((v, i) => [v, i + 1]).filter(([v]) => v > 1);
@@ -284,11 +295,12 @@ function answersProse(D) {
     const lean = others.map((k) => ({ k, v: sh(k, 'Michael') })).sort((a, b) => b.v - a.v);
     const close = lean[0].v - lean[2].v < 0.015;
     // One clause per person, so no share reads as one of Ryan's next speakers.
-    let p3 = `${lean[0].k} leans on Michael hardest: after ${lean[0].k} speaks, Michael goes next ${share(lean[0].v)} of the time. After ${lean[1].k} it’s ${share(lean[1].v)}, and after ${lean[2].k} ${share(lean[2].v)}${close ? ', so it’s close' : ''}.`;
+    const c3 = linker(D);
+    let p3 = `${c3(lean[0].k)} leans on ${c3('Michael')} hardest: after ${c3(lean[0].k)} speaks, Michael goes next ${share(lean[0].v)} of the time. After ${c3(lean[1].k)} it’s ${share(lean[1].v)}, and after ${c3(lean[2].k)} ${share(lean[2].v)}${close ? ', so it’s close' : ''}.`;
     if (has('Angela', 'Dwight')) {
       const [a1, a2] = top('Angela');
       const pair = new Set([a1.k, a2.k]);
-      if (a1.v - a2.v < 0.03) p3 += ` Angela splits it between ${a1.k} (${share(a1.v)}) and ${a2.k} (${share(a2.v)})${pair.has('Michael') && pair.has('Dwight') ? ', which tracks' : ''}.`;
+      if (a1.v - a2.v < 0.03) p3 += ` ${c3('Angela')} splits it between ${c3(a1.k)} (${share(a1.v)}) and ${c3(a2.k)} (${share(a2.v)})${pair.has('Michael') && pair.has('Dwight') ? ', which tracks' : ''}.`;
     }
     out.push(`<p>${p3}</p>`);
   }
@@ -338,13 +350,21 @@ function sceneScript(sc) {
   return `${first.map(ln).join('')}${skipped > 0 ? `<p class="tk-gap">${fmt.int(skipped)} more ${skipped === 1 ? 'line' : 'lines'}</p>` : ''}${last ? ln(last) : ''}`;
 }
 
+// A pair with a panel on Couples Discount links to it. Otherwise each name links to its own page, if it has one.
+function pairLabel(D, a, b) {
+  const cp = coupleOf(D, a, b);
+  const dots = `${dot(a)}${dot(b)}`;
+  if (cp) return `<a class="tk-pair" href="${PG.couples.h}@${slug(`${cp.a}-${cp.b}`)}" title="${esc(PG.couples.name)}">${dots}${esc(a)} &amp; ${esc(b)}</a>`;
+  return `<span class="tk-pair">${dots}<span>${charA(D, a)} &amp; ${charA(D, b)}</span></span>`;
+}
+
 function scenesList(D, runs) {
   const rank = (k) => D.char[k]?.rank ?? 999;
   return runs.map((sc) => {
     const e = D.episodes[sc.ep];
     const [a, b] = [sc.a, sc.b].sort((x, y) => rank(x) - rank(y));
     return `<li class="tk-scene${sc.pos > 6 ? ' tk-extra' : ''}">
-      <div class="tk-sh"><span class="tk-sn">${sc.pos}${sc.tied ? '<span class="tk-sr">, tied</span>' : ''}</span><span class="tk-pair">${dot(a)}${dot(b)}${esc(a)} &amp; ${esc(b)}</span><b class="tk-sc">${fmt.int(sc.n)} lines</b></div>
+      <div class="tk-sh"><span class="tk-sn">${sc.pos}${sc.tied ? '<span class="tk-sr">, tied</span>' : ''}</span>${pairLabel(D, a, b)}<b class="tk-sc">${fmt.int(sc.n)} lines</b></div>
       <div class="tk-sm"><a href="#/episode/${e.id}">${esc(e.t)}</a> · ${epCode(e)}${e.shuffled ? ' <span class="flag alt">Shuffled transcript</span>' : ''}</div>
       <div class="tk-script"${sc.lines ? '' : ` data-ep="${e.id}"`}>${sc.lines ? sceneScript(sc) : ''}</div>
     </li>`;
@@ -386,8 +406,8 @@ function phraseCard(D, p) {
   return `
     <div class="card"><p class="phrase-big">“${esc(phraseShow(p))}”</p>
       <p class="phrase-total">${said}</p>
-      ${twss ? '<p class="small"><a class="link-arrow" href="#/findings@twss">All of them, with the setups</a></p>' : ''}
-      ${q ? `<p class="small"><button type="button" class="link-arrow tk-read" data-q="${esc(q)}">${p.lines === 1 ? 'Read the line' : `Read all ${fmt.int(p.lines)} lines`}</button></p>` : ''}
+      ${twss ? `<p class="small"><a class="link-arrow" href="${PG.findings.h}@twss-list">All of them, with the setups</a></p>` : ''}
+      ${q ? `<p class="small"><button type="button" class="link-arrow tk-read" aria-expanded="false" data-q="${esc(q)}">${p.lines === 1 ? 'Read the line' : `Read all ${fmt.int(p.lines)} lines`}</button></p>` : ''}
       <div id="phr-chart" class="mt"></div></div>
     <div class="card"><h3 class="card-title">Who says it</h3><p class="card-sub">${everyone ? 'Everyone who says it, by times said.' : `The top ${nw(p.speakers.length)}, by times said.`}</p>
       ${hbars(p.speakers.map((s) => ({ label: s.k, v: s.n, color: color(s.k), dot: color(s.k), k: s.k })), { href: (r) => charHref(D, r.k) })}</div>`;
@@ -398,19 +418,24 @@ export function dialogue(D, lines, term) {
   const runs = sceneRuns(D);
   const nScenesShuf = runs.filter((s) => D.episodes[s.ep].shuffled).length;
   const nScenesMore = runs.filter((s) => s.pos > 6).length;
+  // The lede's example is an episode, so it links to it.
+  const tots = D.episodes.find((e) => norm(e.t) === 'scotts tots');
+  // In the html below, the jump bar's mark for the longest scenes (#long-scenes) is on a plain wrapper, not on the
+  // card. The card slides up 18px as it comes into view, so a jump measured on the card itself landed 18px short.
   return {
-    title: term ? `“${parse(term).show}” in the script` : 'Dialogue',
+    title: term ? `“${parse(term).show}” in the script` : PG.dialogue.name,
     html: `
     <section class="wrap page-head">
-      <p class="eyebrow">Dialogue</p>
+      <p class="eyebrow">${esc(PG.dialogue.name)}</p>
       <h1>Every line, <em>searchable.</em></h1>
-      <p class="lede">All ${fmt.int(D.totals.lines)} lines, ${fmt.int(D.totals.vocab)} different words. Punctuation doesn’t count, so “scotts tots” finds Scott’s Tots.</p>
+      <p class="lede">All ${fmt.int(D.totals.lines)} lines, ${fmt.int(D.totals.vocab)} different words. Punctuation doesn’t count, so “scotts tots” finds ${tots ? ttl(tots) : 'Scott’s Tots'}.</p>
     </section>
     <section class="wrap" id="search" data-sec="Search">
       <form class="searchbox rv" role="search" id="sform">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
         <input id="sq" type="search" enterkeyhint="search" placeholder="Try “beets” or “bankruptcy”" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search the script">
       </form>
+      <p class="tk-count" id="s-count" hidden></p>
       <div class="suggest rv">${SUGGEST.map((s) => `<button type="button" class="pill" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div>
       <p id="s-status" class="tk-sr" role="status" aria-live="polite"></p>
       <div id="sres" class="mt"></div>
@@ -418,7 +443,7 @@ export function dialogue(D, lines, term) {
 
     <section class="section wrap" id="quotables" data-sec="Quotables">
       <div class="section-head rv"><div><p class="eyebrow">Quotables</p><h2>The lines you quote most, <em>the script says least.</em></h2></div>
-        <p class="small muted tk-head-note">Counted in the fan transcript. Tap a card to see it in context.</p></div>
+        <p class="small muted tk-head-note">Counted in the fan transcript. Tap a card to read it in the script.</p></div>
       <div class="tk-wall">${quoteWall(D)}</div>
     </section>
 
@@ -441,35 +466,179 @@ export function dialogue(D, lines, term) {
           <p class="card-sub">Read across a row: after that person finishes a line, how often each of the others speaks next. Rows don’t reach 100% because people outside these ${nw(D.matrix.keys.length)} answer too.</p>
           <p class="matrix-hint">Swipe sideways to see all ${nw(D.matrix.keys.length)}.</p>
           <div class="matrix-wrap"><div class="matrix" id="mx"></div></div>
-          <p class="tk-couples"><a class="link-arrow" href="#/couples">Couples Discount: the ships, measured</a></p></div>
+          <p class="tk-couples"><a class="link-arrow" href="${PG.couples.h}">${esc(PG.couples.name)}: the ships, measured</a></p></div>
         <div class="prose rv" style="--d:.08s">${answersProse(D)}</div>
       </div>
-      <div class="card rv mt">
+      <div class="mt" id="long-scenes" data-sec="Longest scenes">
+      <div class="card rv">
         <h3 class="card-title">The longest two-person scenes</h3>
         ${nScenesShuf ? `<p class="card-sub">In the ${nScenesShuf === 1 ? 'one' : nw(nScenesShuf)} marked “shuffled transcript”, two scenes trade lines, so the run may be both scenes taking turns.</p>` : ''}
         <ol class="tk-scenes" id="scenes">${scenesList(D, runs)}</ol>
         ${nScenesMore ? `<button type="button" class="btn ghost mt" id="scenes-more">Show all ${nw(runs.length)}</button>` : ''}
+      </div>
       </div>
     </section>`,
     after() {
       matrix($('#mx'), D);
       const input = $('#sq');
       const out = $('#sres');
+      const sec = $('#search');
+      const countEl = $('#s-count');
       // What the reader had open, saved on this history entry when they last clicked something here (see remember below).
       const saved = history.state && typeof history.state.tkY === 'number' ? history.state : null;
-      const toTop = () => $('#sform')?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
+      const smooth = () => (reduceMotion() ? 'auto' : 'smooth');
       let go = () => {};
+      let remember = () => {};
+      let shown = 0;
+      let phr = 0;
+      // Screen readers hear one short sentence per search, not forty lines of script.
+      const status = (t) => { const el = $('#s-status'); if (el) el.textContent = t; };
+      // Revealing more takes the button away, so focus moves to the first thing it revealed.
+      const focusEl = (el) => { if (!el) return; el.tabIndex = -1; el.focus({ preventScroll: true }); };
+      const loading = () => `<p>Pulling the script out of the filing cabinet. <span class="tk-load-n">${S.done} of ${D.seasons.length} seasons</span></p><div class="tk-bar"><span style="width:${(S.done / D.seasons.length) * 100}%"></span></div>`;
+      // The search box and an open card can both be waiting on the script, so every loading bar on the page moves.
+      const progress = (n) => {
+        $$('.tk-load').forEach((box) => {
+          const bar = $('.tk-bar span', box);
+          const txt = $('.tk-load-n', box);
+          if (bar) bar.style.width = `${(n / D.seasons.length) * 100}%`;
+          if (txt) txt.textContent = `${n} of ${D.seasons.length} seasons`;
+        });
+      };
+      // One matching line: who says it, the line, and the episode it's in.
+      const lineRow = (i, rx) => {
+        const [ep, who, tx] = S.all[i];
+        const e = D.episodes[ep];
+        return `<div class="ln"><span class="sp">${dot(who)}${esc(who)}</span><span><span class="tx">${highlight(tx, rx)}</span><div class="meta"><a href="#/episode/${e.id}">${esc(e.t)}</a> · ${epCode(e)}</div></span></div>`;
+      };
+
+      // lines in place
+      // A quote, nickname or running-joke card opens its lines right under itself, so the reader keeps their place on
+      // the board instead of being sent up to the search box. One panel a board. What's open is saved with the scroll
+      // (remember, below), so Back from an episode returns to the same card with the same lines showing.
+      const BOARDS = {
+        wall: { cards: () => $$('.tk-wall .tk-card.is-tap'), btn: (c) => $('button.tk-line', c), slot: (c) => c },
+        nicks: { cards: () => $$('.tk-nicks .tk-nick'), btn: (c) => c, slot: (c) => c },
+        // The running joke's lines go inside its card, straight under the button, which then offers to put them away.
+        phr: { cards: () => $$('#phr-body .tk-read'), btn: (c) => c, slot: (c) => c.closest('p'), hide: true },
+      };
+      const openIn = {};
+      const inFirst = () => (matchMedia('(max-width: 620px)').matches ? 5 : 8);
+      // Whatever opens or closes above the card just tapped, the card stays under the thumb.
+      const keepStill = (node, change) => {
+        const y = node.getBoundingClientRect().top;
+        change();
+        const dy = node.getBoundingClientRect().top - y;
+        if (Math.abs(dy) > 1) window.scrollBy({ top: dy, behavior: 'instant' });
+      };
+      const closeIn = (board, focus) => {
+        const o = openIn[board];
+        if (!o) return;
+        delete openIn[board];
+        const B = BOARDS[board];
+        const c = B.cards()[o.i];
+        o.el.remove();
+        if (!c) return;
+        c.classList.remove('is-open');
+        B.btn(c).setAttribute('aria-expanded', 'false');
+        if (B.hide && c.dataset.label) c.textContent = c.dataset.label;
+        if (focus) B.btn(c).focus({ preventScroll: true });
+      };
+      function showIn(board, i, { upTo = 0, quiet = false } = {}) {
+        const B = BOARDS[board];
+        const c = B.cards()[i];
+        if (!c) return Promise.resolve();
+        const Q = parse(c.dataset.q);
+        const el = document.createElement('section');
+        el.className = 'tk-in';
+        el.id = `tk-in-${board}`;
+        el.setAttribute('aria-label', `Lines with ${Q.show}`);
+        el.innerHTML = `<div class="tk-in-head"><p class="tk-in-t"><b>“${esc(Q.show)}”</b> <span class="tk-in-n"></span></p>
+          <button type="button" class="tk-in-x" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button></div>
+          <div class="tk-in-body"><div class="tk-load">${loading()}</div></div>`;
+        const put = () => { closeIn(board); B.slot(c).after(el); };
+        if (quiet) put(); else keepStill(c, put);
+        c.classList.add('is-open');
+        B.btn(c).setAttribute('aria-expanded', 'true');
+        B.btn(c).setAttribute('aria-controls', el.id);
+        if (B.hide) { c.dataset.label = c.textContent; c.textContent = c.textContent.endsWith('lines') ? 'Hide the lines' : 'Hide the line'; }
+        const o = (openIn[board] = { i, shown: 0, el });
+        const live = () => openIn[board] === o && el.isConnected;
+        // Bring as much of the panel on screen as fits without pushing its card up under the bars.
+        const reveal = () => {
+          const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+          const dy = Math.min(el.getBoundingClientRect().bottom + 16 - innerHeight, c.getBoundingClientRect().top - pad);
+          if (dy > 1) window.scrollTo({ top: scrollY + dy, behavior: smooth() });
+        };
+        let moved = false;
+        let more = () => {};
+        el.addEventListener('click', (ev) => {
+          if (ev.target.closest('.tk-in-x')) { closeIn(board, true); remember(); }
+          else if (ev.target.closest('.tk-in-more')) { more(40, true); remember(); }
+          else if (ev.target.closest('.tk-in-retry')) showIn(board, i);
+        });
+        const fill = () => {
+          if (!live()) return;
+          const hits = find(Q);
+          const body = $('.tk-in-body', el);
+          if (!hits.length) { body.innerHTML = '<p class="small muted">Nobody says it in this transcript.</p>'; return; }
+          const rx = marker(Q);
+          const nEps = new Set(hits.map((h) => S.all[h][0])).size;
+          const tally = `${fmt.plural(hits.length, 'line')} in ${fmt.plural(nEps, 'episode')}`;
+          $('.tk-in-n', el).textContent = tally;
+          // One line has nothing more to chart, so only longer lists offer the search and its by-season view.
+          body.innerHTML = `<div class="script tk-in-lines"></div>${hits.length > 1 ? `<div class="tk-in-foot"><span class="tk-in-ms"></span><a class="link-arrow" href="${searchHref(c.dataset.q)}">Open in the search</a></div>` : ''}`;
+          more = (n, focus) => {
+            const box = $('.tk-in-lines', el);
+            const from = o.shown;
+            const chunk = hits.slice(from, from + n);
+            o.shown += chunk.length;
+            box.insertAdjacentHTML('beforeend', chunk.map((h) => lineRow(h, rx)).join(''));
+            const left = hits.length - o.shown;
+            const ms = $('.tk-in-ms', el);
+            if (ms) ms.innerHTML = left > 0 ? `<button type="button" class="btn ghost tk-in-more">${left > 40 ? `Show 40 more (${fmt.int(left)} left)` : `Show all ${fmt.int(hits.length)}`}</button>` : '';
+            if (focus) focusEl(box.children[from]);
+          };
+          more(Math.max(inFirst(), upTo));
+          if (quiet) return;
+          status(`${Q.show}: ${tally}.`);
+          if (!moved) reveal();
+        };
+        if (S.all) { fill(); return Promise.resolve(); }
+        S.onProgress = progress;
+        if (!quiet) {
+          // The script is still on its way. Show the loading bar now, and the lines when they land, unless the
+          // reader has moved on by then.
+          reveal();
+          const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+          const mine = () => { moved = true; events.forEach((e) => removeEventListener(e, mine)); };
+          events.forEach((e) => addEventListener(e, mine, { passive: true }));
+        }
+        return loadAll(D, lines).then(fill).catch(() => {
+          if (live()) $('.tk-in-body', el).innerHTML = '<p class="small">The script didn’t load. Check your connection, then <button type="button" class="tk-link tk-in-retry">try again</button></p>';
+        });
+      }
+      const toggleIn = (board, c) => {
+        const i = BOARDS[board].cards().indexOf(c);
+        if (i < 0) return;
+        if (openIn[board]?.i === i) closeIn(board);
+        else showIn(board, i);
+        remember();
+      };
+      $$('.tk-card.is-tap').forEach((c) => c.addEventListener('click', (ev) => { if (!ev.target.closest('a')) toggleIn('wall', c); }));
+      $$('.tk-nick').forEach((b) => b.addEventListener('click', () => toggleIn('nicks', b)));
 
       // running jokes
-      let phr = 0;
       const drawP = (i) => {
         const p = D.phrases[i];
         const body = $('#phr-body');
         if (!p || !body) return;
         phr = i;
+        // The old card takes its open lines with it.
+        delete openIn.phr;
         body.innerHTML = phraseCard(D, p);
         columns($('#phr-chart'), { cats, series: [{ name: phraseShow(p), color: 'var(--accent)', values: p.perSeason }], height: 200, href: (it) => `#/season/${it.ci + 1}`, label: `${phraseShow(p)}, by season` });
-        $('#phr-body .tk-read')?.addEventListener('click', (ev) => { go(ev.currentTarget.dataset.q); toTop(); });
+        $('#phr-body .tk-read')?.addEventListener('click', (ev) => toggleIn('phr', ev.currentTarget));
         requestAnimationFrame(() => { $('#phr-chart')?.classList.add('go'); $('#phr-body .hbars')?.classList.add('go'); });
       };
       const pick = (b) => {
@@ -478,7 +647,7 @@ export function dialogue(D, lines, term) {
       };
       $$('#phr .pill').forEach((b) => b.addEventListener('click', () => {
         pick(b);
-        b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' });
+        b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: smooth() });
       }));
       const b0 = saved?.tkPhr ? $(`#phr .pill[data-i="${saved.tkPhr}"]`) : null;
       if (b0) {
@@ -488,8 +657,6 @@ export function dialogue(D, lines, term) {
         strip.scrollLeft += b0.getBoundingClientRect().left - strip.getBoundingClientRect().left - 24;
       } else drawP(0);
 
-      // Revealing more takes the button away, so focus moves to the first thing it revealed.
-      const focusEl = (el) => { if (!el) return; el.tabIndex = -1; el.focus({ preventScroll: true }); };
       // Runs the data's top 12 left out have no lines yet. Fetch them from the transcript once they're on screen.
       const fillScenes = (all) => {
         $$('#scenes .tk-script[data-ep]').forEach((box) => {
@@ -510,30 +677,33 @@ export function dialogue(D, lines, term) {
 
       // search
       let timer;
-      let shown = 0;
       let seq = 0;
       const setURL = (t) => {
         const clean = t.replace(/@/g, ' ').trim();
-        const url = clean ? `#/dialogue/q/${encodeURIComponent(clean)}` : '#/dialogue';
+        const url = clean ? searchHref(clean) : PG.dialogue.h;
         // replaceState doesn't fire hashchange, so the router doesn't re-render the page under the reader.
         if (location.hash !== url) history.replaceState(null, '', url);
-        document.title = `${clean ? `“${parse(clean).show}” in the script` : 'Dialogue'} · The Office, by the numbers`;
+        document.title = `${clean ? `“${parse(clean).show}” in the script` : PG.dialogue.name} · The Office, by the numbers`;
       };
-      // Screen readers hear one short sentence per search, not forty lines of script.
-      const status = (t) => { const el = $('#s-status'); if (el) el.textContent = t; };
-      const progress = (n) => {
-        const bar = $('#tk-prog');
-        if (!bar) return;
-        bar.querySelector('span').style.width = `${(n / D.seasons.length) * 100}%`;
-        bar.parentElement.querySelector('.tk-load-n').textContent = `${n} of ${D.seasons.length} seasons`;
-      };
+      // The count sits right under the box, where it shows above a phone's keyboard. Tapping it goes to the lines.
+      const setCount = (html) => { countEl.innerHTML = html; countEl.hidden = !html; };
+      countEl.addEventListener('click', (ev) => {
+        const card = $('#s-hits');
+        if (!card || !ev.target.closest('button')) return;
+        input.blur();
+        card.scrollIntoView({ behavior: smooth(), block: 'start' });
+        focusEl(card);
+      });
 
       async function run(raw, { restore } = {}) {
         const my = ++seq;
         const Q = parse(raw);
-        if (Q.q.length < 2) { out.innerHTML = ''; status(''); return; }
+        // With a search on, the suggestions fold into one row (css) so the results start higher.
+        sec.classList.toggle('has-q', Q.q.length >= 2);
+        if (Q.q.length < 2) { out.innerHTML = ''; status(''); setCount(''); return; }
         if (!S.all) {
-          out.innerHTML = `<div class="card tk-load"><p>Pulling the script out of the filing cabinet. <span class="tk-load-n">${S.done} of ${D.seasons.length} seasons</span></p><div class="tk-bar" id="tk-prog"><span style="width:${(S.done / D.seasons.length) * 100}%"></span></div></div>`;
+          setCount('Loading the script');
+          out.innerHTML = `<div class="card tk-load">${loading()}</div>`;
           S.onProgress = progress;
         }
         try {
@@ -541,6 +711,7 @@ export function dialogue(D, lines, term) {
         } catch (err) {
           if (my !== seq || !out.isConnected) return;
           status('The script didn’t load.');
+          setCount('');
           out.innerHTML = '<div class="card tk-load"><p>The script didn’t load. Check your connection, then <button type="button" class="btn ghost" id="s-retry">try again</button></p></div>';
           $('#s-retry')?.addEventListener('click', () => run(raw));
           return;
@@ -571,6 +742,7 @@ export function dialogue(D, lines, term) {
         const shownTerm = `“${esc(Q.show)}”`;
         if (!hits.length) {
           status(`Nobody says ${Q.show} in this transcript.`);
+          setCount('No lines');
           out.innerHTML = `<div class="card"><p class="phrase-big tk-empty">Nobody says ${shownTerm} in this transcript.</p><p class="muted">Fan transcripts miss things, so try fewer words.</p></div>`;
           return;
         }
@@ -594,32 +766,35 @@ export function dialogue(D, lines, term) {
           else if (ties.length === 2) most = ` Most in ${link(ties[0])} and ${link(ties[1])}, ${fmt.plural(eps[0][1], 'line')} each.`;
         }
         const rx = marker(Q);
+        const tally = `${fmt.plural(hits.length, 'line')} in ${fmt.plural(eps.length, 'episode')}`;
         shown = 0;
-        status(`${Q.show}: ${fmt.plural(hits.length, 'line')} in ${fmt.plural(eps.length, 'episode')}.`);
+        status(`${Q.show}: ${tally}.`);
+        setCount(`<button type="button" class="tk-jump">${tally}</button>`);
+        // The lines come first. The two charts follow them on a phone and sit beside them on a wide screen.
         out.innerHTML = `
-          <div class="grid g-7-5">
-            <div class="card"><p class="phrase-big tk-term">${shownTerm}</p>
-              <p class="phrase-total">${fmt.plural(hits.length, 'line')} in ${fmt.plural(eps.length, 'episode')}.${most}</p>
+          <div class="grid g-7-5 tk-res" style="align-items:start">
+            <div class="card" id="s-hits"><p class="phrase-big tk-term">${shownTerm}</p>
+              <p class="phrase-total">${tally}.${most}</p>
               ${wholeNote(Q, hits, L, rx)}
               ${twssNote(Q, hits, L)}
-              <div id="s-chart" class="mt"></div></div>
-            <div class="card"><h3 class="card-title">Who says it</h3><p class="card-sub">Lines containing it, by speaker.${speakers.length > sp.length ? ` Top ${nw(sp.length)} of ${fmt.int(speakers.length)}.` : ''}</p>
-              ${hbars(sp.map(([k, n]) => ({ label: k, v: n, color: color(k), dot: color(k), k })), { href: (r) => charHref(D, r.k) })}</div>
-          </div>
-          <div class="card mt"><div class="script" id="s-lines"></div><div id="s-more" class="mt"></div></div>`;
+              <div class="script mt" id="s-lines"></div><div id="s-more" class="mt"></div></div>
+            <div class="grid tk-side">
+              <div class="card"><h3 class="card-title">When it’s said</h3><p class="card-sub">Lines containing it, by season.</p><div id="s-chart"></div></div>
+              <div class="card"><h3 class="card-title">Who says it</h3><p class="card-sub">Lines containing it, by speaker.${speakers.length > sp.length ? ` Top ${nw(sp.length)} of ${fmt.int(speakers.length)}.` : ''}</p>
+                ${hbars(sp.map(([k, n]) => ({ label: k, v: n, color: color(k), dot: color(k), k })), { href: (r) => charHref(D, r.k) })}</div>
+            </div>
+          </div>`;
         columns($('#s-chart'), { cats, series: [{ name: Q.show, color: 'var(--accent)', values: bySeason }], height: 190, href: (it) => `#/season/${it.ci + 1}`, label: `${Q.show}, by season` });
         requestAnimationFrame(() => { $('#s-chart')?.classList.add('go'); $('#sres .hbars')?.classList.add('go'); });
+        // Stacked, a long first batch would bury the charts, so a narrow screen starts with ten lines.
+        const first = matchMedia('(max-width: 960px)').matches ? 10 : 40;
         const more = (focus) => {
           const box = $('#s-lines');
           if (!box) return;
           const from = shown;
-          const chunk = hits.slice(shown, shown + 40);
+          const chunk = hits.slice(shown, shown + (shown ? 40 : first));
           shown += chunk.length;
-          box.insertAdjacentHTML('beforeend', chunk.map((i) => {
-            const [ep, who, tx] = L[i];
-            const e = D.episodes[ep];
-            return `<div class="ln"><span class="sp">${dot(who)}${esc(who)}</span><span><span class="tx">${highlight(tx, rx)}</span><div class="meta"><a href="#/episode/${e.id}">${esc(e.t)}</a> · ${epCode(e)}</div></span></div>`;
-          }).join(''));
+          box.insertAdjacentHTML('beforeend', chunk.map((i) => lineRow(i, rx)).join(''));
           const left = hits.length - shown;
           $('#s-more').innerHTML = left > 0 ? `<button type="button" class="btn ghost" id="s-more-b">Show ${fmt.int(Math.min(40, left))} more (${fmt.int(left)} left)</button>` : '';
           $('#s-more-b')?.addEventListener('click', () => more(true));
@@ -636,7 +811,9 @@ export function dialogue(D, lines, term) {
       function twssNote(Q, hits, L) {
         if (!Q.q.startsWith('thats what she said')) return '';
         const ask = hits.filter((i) => /^does that include/i.test(L[i][2]));
-        return `<p class="small muted">${ask.length ? `One of these is ${esc(L[ask[0]][1])} asking whether it counts, in ${esc(D.episodes[L[ask[0]][0]].t)}. ` : ''}<a href="#/findings@twss">All ${fmt.int(D.findings.twssLines)} jokes, with the setups</a>.</p>`;
+        // The title is set the way the "Most in" titles just above it in this card are: linked, not italic.
+        const inEp = ask.length ? D.episodes[L[ask[0]][0]] : null;
+        return `<p class="small muted">${inEp ? `One of these is ${charA(D, L[ask[0]][1])} asking whether it counts, in <a href="#/episode/${inEp.id}">${esc(inEp.t)}</a>. ` : ''}<a href="${PG.findings.h}@twss-list">All ${fmt.int(D.findings.twssLines)} jokes, with the setups</a>.</p>`;
       }
 
       go = (t, opts) => { clearTimeout(timer); input.value = t; setURL(t); run(t, opts); };
@@ -648,28 +825,40 @@ export function dialogue(D, lines, term) {
       $('#sform').addEventListener('submit', (ev) => { ev.preventDefault(); clearTimeout(timer); setURL(input.value); run(input.value); input.blur(); });
       input.addEventListener('focus', () => { loadAll(D, lines).catch(() => {}); }, { once: true });
       $$('.suggest .pill').forEach((b) => b.addEventListener('click', () => go(b.dataset.q)));
-      $$('.tk-card.is-tap').forEach((c) => c.addEventListener('click', (ev) => {
-        if (ev.target.closest('a')) return;
-        go(c.dataset.q);
-        toTop();
-      }));
-      $$('.tk-nick').forEach((b) => b.addEventListener('click', () => { go(b.dataset.q); toTop(); }));
       out.addEventListener('click', (ev) => { const b = ev.target.closest('.tk-link[data-q]'); if (b) go(b.dataset.q); });
 
       // app.js remembers scroll by route, but a search rewrites the URL under it, and it can't know what was expanded.
-      // So any click on this page saves the scroll, the lines shown, the open scenes and the running joke on this
-      // history entry. Links and chart taps both start with a click, so Back from anywhere lands on the same spot.
-      const remember = () => {
+      // So any click on this page saves the scroll, the lines shown, the open scenes, the running joke and the cards
+      // open in place on this history entry. Links and chart taps both start with a click, so Back from anywhere
+      // lands on the same spot.
+      remember = () => {
         if (!input.isConnected) { document.removeEventListener('click', remember, true); return; }
-        history.replaceState({ tkY: scrollY, tkShown: shown, tkScenes: !!$('#scenes.all'), tkPhr: phr }, '');
+        const tkIn = Object.fromEntries(Object.entries(openIn).map(([b, o]) => [b, [o.i, o.shown]]));
+        try { history.replaceState({ tkY: scrollY, tkShown: shown, tkScenes: !!$('#scenes.all'), tkPhr: phr, tkIn }, ''); } catch (err) { /* Safari rations replaceState */ }
       };
       document.addEventListener('click', remember, true);
 
+      // Back on this page: reopen the cards that were open, then go to where the reader was.
+      const reopen = saved?.tkIn ? Object.entries(saved.tkIn).filter(([b, v]) => BOARDS[b] && Array.isArray(v)) : [];
+      const wait = !S.all && reopen.length > 0;
+      const opened = Promise.all(reopen.map(([b, [i, n]]) => showIn(b, i, { upTo: n, quiet: true })));
       if (term) {
         input.value = term;
-        run(term, { restore: saved ? { y: saved.tkY, shown: saved.tkShown || 40 } : null });
+        run(term, { restore: saved ? { y: saved.tkY, shown: saved.tkShown || 0 } : null });
       } else if (saved) {
-        requestAnimationFrame(() => window.scrollTo({ top: saved.tkY, behavior: 'instant' }));
+        const back = () => requestAnimationFrame(() => window.scrollTo({ top: saved.tkY, behavior: 'instant' }));
+        back();
+        if (wait) {
+          // After a reload the script loads again before those cards can fill and push the page back out. Go back
+          // once they have, unless the reader has already started moving.
+          let hands = false;
+          const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+          const mine = () => { hands = true; events.forEach((e) => removeEventListener(e, mine)); };
+          events.forEach((e) => addEventListener(e, mine, { passive: true }));
+          // Twice, a frame apart: when the address has an @section, the router is still holding the page on that
+          // section while it grows, and gets the last word in the first frame.
+          opened.then(() => { const moved = hands; mine(); if (!moved && input.isConnected) { back(); requestAnimationFrame(back); } });
+        }
       }
     },
   };
@@ -691,18 +880,19 @@ function twssCallouts(D, list) {
   list.forEach((x) => (byEp[x.ep] ||= []).push(x));
   for (const [ep, xs] of Object.entries(byEp)) {
     const feeders = new Set(xs.map((x) => x.setup?.k));
-    if (xs.length >= 3 && feeders.size === 1 && xs[0].setup) out.push(`${esc(xs[0].setup.k)} feeds ${esc(xs[0].k)} ${nw(xs.length)} in ${ttl(E[+ep])}.`);
+    if (xs.length >= 3 && feeders.size === 1 && xs[0].setup) { const c = linker(D); out.push(`${c(xs[0].setup.k)} feeds ${c(xs[0].k)} ${nw(xs.length)} in ${ttl(E[+ep])}.`); }
   }
   const both = list.find((x) => x.self && x.k !== 'Michael');
-  if (both) out.push(`${esc(both.k)} does both halves in ${ttl(E[both.ep])}.`);
+  if (both) out.push(`${charA(D, both.k)} does both halves in ${ttl(E[both.ep])}.`);
   const same = list.filter((x) => x.setup && /harder than it has to be/i.test(x.setup.t));
   if (same.length >= 2) {
     const [a, b] = same;
     const gap = Math.abs(E[b.ep].s - E[a.ep].s);
-    out.push(`${esc(a.setup.k)} and ${esc(b.setup.k)} hand ${esc(a.k)} the same setup, “harder than it has to be”, ${gap ? `${nw(gap)} season${gap === 1 ? '' : 's'} apart` : 'in the same season'}.`);
+    const c = linker(D);
+    out.push(`${c(a.setup.k)} and ${c(b.setup.k)} hand ${c(a.k)} the same setup, “harder than it has to be”, ${gap ? `${nw(gap)} season${gap === 1 ? '' : 's'} apart` : 'in the same season'}.`);
   }
   const last = list[list.length - 1];
-  if (last) out.push(`The show’s last one is ${esc(last.k)}’s, in ${E[last.ep].t === 'Finale' ? `the <a href="#/episode/${last.ep}"><em>Finale</em></a>` : ttl(E[last.ep])}.`);
+  if (last) out.push(`The show’s last one is ${charA(D, last.k)}’s, in ${E[last.ep].t === 'Finale' ? `the <a href="#/episode/${last.ep}"><em>Finale</em></a>` : ttl(E[last.ep])}.`);
   return out;
 }
 
@@ -765,14 +955,21 @@ export function findings(D) {
   // Section Five's line comes from the four cards under it, so it can't call a pass a miss.
   const fiveP = [['bigger casts', F.speakersCorr.p], ['holiday episodes', F.holiday.p], ['longer scripts', F.linesCorr.p], ['Michael’s share of lines', F.michaelShareCorr.p]];
   const pass = fiveP.filter(([, p]) => p < 0.05).map(([k]) => k);
+  // Links the sentences below use: the ranked list filtered the way each number was counted, and the script search.
+  const ranked = (q) => `${PG.episodes.h}@${q}`;
+  const here = (id) => `${PG.findings.h}@${id}`;
+  const c2 = linker(D);
+  const multiLine = multi.length ? ` The extra ${multi.length === 1 ? (multi[0].n === 2 ? 'one is' : `${nw(multi[0].n - 1)} are`) : 'ones are'} ${and(multi.map((x) => `${c2(x.k)} saying it ${x.n === 2 ? 'twice' : `${nw(x.n)} times`} in one go in ${ttl(E[x.ep])}`))}.` : '';
+  // Niagara and The Delivery are two rows each in the data. The name links to the first half.
+  const part1 = (name) => { const e = E.find((x) => x.t.startsWith(`${name}:`)); return e ? `<a href="#/episode/${e.id}"><em>${esc(name)}</em></a>` : `<em>${esc(name)}</em>`; };
   const fiveLine = !pass.length ? 'A few more I checked. None of them clears the bar, which is a result too.'
     : pass.length === 1 && pass[0] === 'bigger casts' ? 'A few more I checked. Only bigger casts clears the bar, and that turns out to be the era.'
     : `A few more I checked. ${pass.length === 1 ? 'Only one clears' : `${cap(nw(pass.length))} clear`} the bar: ${and(pass)}.`;
   return {
-    title: 'Findings',
+    title: PG.findings.name,
     html: `
     <section class="wrap page-head">
-      <p class="eyebrow">Findings</p>
+      <p class="eyebrow">${esc(PG.findings.name)}</p>
       <h1>What the numbers <em>actually say.</em></h1>
       <p class="lede">Five questions fans argue about, answered with the data and a couple of statistical tests.</p>
     </section>
@@ -784,16 +981,16 @@ export function findings(D) {
         <h2>Did the show get worse after Michael left?</h2>
         <span class="verdict yes">Yes, clearly</span>
         <div class="prose mt">
-          <p>Up to and including ${ttl(bye)}, ${M.nA} episodes average <strong>${M.meanA.toFixed(2)}</strong> on IMDb. The ${M.nB} after it average <strong>${M.meanB.toFixed(2)}</strong>, a drop of ${(M.meanA - M.meanB).toFixed(2)} points.</p>
+          <p>Up to and including ${ttl(bye)}, <a href="${ranked('era=with')}">${M.nA} episodes</a> average <strong>${M.meanA.toFixed(2)}</strong> on IMDb. The <a href="${ranked('era=after')}">${M.nB} after it</a> average <strong>${M.meanB.toFixed(2)}</strong>, a drop of ${(M.meanA - M.meanB).toFixed(2)} points.</p>
           <p>It isn’t a few big nights doing the work. Take out the ${hours.length} hour-long episodes, ${ttl(bye)} and the final run from ${ttl(finalRun)} on, and it’s still <strong>${C.meanA.toFixed(2)}</strong> against <strong>${C.meanB.toFixed(2)}</strong> over ${C.nA} and ${C.nB} episodes (${pEq(C.p)}).</p>
           <p>Viewers fall harder, from ${fmt.m(V.meanA)} to ${fmt.m(V.meanB)} an episode. That leaves out ${ttl(sb)}, which aired after the Super Bowl to ${fmt.m(sb.v)}, so it doesn’t flatter the early years.</p>
         </div>
-        <div class="explain"><b>The check.</b> I shuffled the labels “with Michael” and “without” at random ${fmt.int(SHUFFLES)} times and counted how often chance alone made a gap this big. ${permText(F.michaelRatingPerm)} A Welch t-test agrees (${pEq(M.p)}).<br><br><b>The catch.</b> Network TV was losing viewers everywhere by 2011, so not all of the viewer drop is Michael.</div>
+        <div class="explain"><b>The check.</b> I shuffled the labels “with Michael” and “without” at random ${fmt.int(SHUFFLES)} times and counted how often chance alone made a gap this big. ${permText(F.michaelRatingPerm)} A Welch t-test agrees (${pEq(M.p)}).<br><br><b>The catch.</b> Network TV was losing viewers everywhere by 2011, so not all of the viewer drop is ${charA(D, 'Michael')}.</div>
       </div>
       <div>
         <div class="card"><h3 class="card-title">IMDb rating, every episode</h3><p class="card-sub">The solid line is a 9-episode moving average, on each side of Michael leaving.</p><div id="f-m1"></div></div>
-        <div class="card mt"><h3 class="card-title">US viewers, millions</h3><p class="card-sub"><em>${esc(sb.t)}</em> (${fmt.m(sb.v)}, after the Super Bowl) runs off the top.</p><div id="f-m2"></div></div>
-        <div class="card mt"><h3 class="card-title">But more Michael doesn’t mean a better episode</h3><p class="card-sub">Episodes through <em>${esc(bye.t)}</em>. ${R}${fmt.num(F.michaelShareCorr.r)}, basically flat. He mattered to the show, not to every scene.</p><div id="f-m3"></div></div>
+        <div class="card mt"><h3 class="card-title">US viewers, millions</h3><p class="card-sub">${ttl(sb)} (${fmt.m(sb.v)}, after the Super Bowl) runs off the top.</p><div id="f-m2"></div></div>
+        <div class="card mt"><h3 class="card-title">But more Michael doesn’t mean a better episode</h3><p class="card-sub">Episodes through ${ttl(bye)}. ${R}${fmt.num(F.michaelShareCorr.r)}, basically flat. He mattered to the show, not to every scene.</p><div id="f-m3"></div></div>
       </div>
     </section>
 
@@ -803,18 +1000,19 @@ export function findings(D) {
         <h2>Do “that’s what she said” episodes rate higher?</h2>
         <span class="verdict">Sort of, then not really</span>
         <div class="prose mt">
-          <p>The line shows up ${fmt.int(F.twssCount)} times in ${fmt.int(F.twssLines)} lines of the transcript.${multi.length ? ` The extra ${multi.length === 1 ? (multi[0].n === 2 ? 'one is' : `${nw(multi[0].n - 1)} are`) : 'ones are'} ${and(multi.map((x) => `${esc(x.k)} saying it ${x.n === 2 ? 'twice' : `${nw(x.n)} times`} in one go in ${ttl(E[x.ep])}`))}.` : ''} Michael says ${twMichael ? fmt.int(twMichael.n) : 0} of them.</p>
+          <p>The line shows up ${fmt.int(F.twssCount)} times in <a href="${here('twss-list')}">${fmt.int(F.twssLines)} lines of the transcript</a>.${multiLine} ${c2('Michael')} says ${twMichael ? fmt.int(twMichael.n) : 0} of them.</p>
           <p>${cap(nw(F.twssEpisodes))} episodes have it in the transcript. The fan wiki’s list adds ${nw(F.twssWikiOnly)} more that the transcript doesn’t have, so ${F.twssAll.nA} episodes in all.</p>
           <p>Across the whole show those episodes average <strong>${F.twssAll.meanA.toFixed(2)}</strong> against <strong>${F.twssAll.meanB.toFixed(2)}</strong>, and that gap passes the usual test (${pEq(F.twssAll.p)}).</p>
           <p>But the joke lives in the Michael years, and the Michael years rated higher anyway. Compare only episodes through ${ttl(bye)} and the gap shrinks to <strong>${(F.twssMichael.meanA - F.twssMichael.meanB).toFixed(2)}</strong>, with ${pEq(F.twssMichael.p)}. That’s the kind of gap random noise makes all the time.</p>
+          <p><a class="link-arrow" href="${searchHref('that’s what she said')}">Search the script for it</a></p>
         </div>
-        <div class="explain"><b>What a p-value means here.</b> It’s the chance of seeing a gap at least this big if the joke made no difference. Under 0.05 is the usual bar for “probably real”, and ${fmt.p(F.twssMichael.p)} is well over it.<br><br><b>A correction.</b> My 2023 version of this test counted every hour-long episode twice.</div>
+        <div class="explain"><b>What a p-value means here.</b> It’s the chance of seeing a gap at least this big if the joke made no difference. Under 0.05 is the usual bar for “probably real”, and ${fmt.p(F.twssMichael.p)} is well over it.<br><br><b>A correction.</b> My <a href="${OLD.h}">2023 version</a> of this test counted every hour-long episode twice.</div>
       </div>
       <div>
         <div class="card"><div class="card-head"><div><h3 class="card-title">Ratings, with and without the joke</h3></div>
           <div class="toggle" id="tw-t" role="group" aria-label="Which episodes"><button type="button" class="on" aria-pressed="true" data-v="all">All episodes</button><button type="button" aria-pressed="false" data-v="m">Michael era only</button></div></div>
           <div id="f-t1"></div><p class="small muted" id="tw-note"></p></div>
-        <div class="card mt">
+        <div class="card mt" id="twss-list" data-sec="The full list">
           <h3 class="card-title">That’s what she said: all of them, with the setups</h3>
           <p class="card-sub">In air order.</p>
           <div class="tk-chips">
@@ -823,9 +1021,9 @@ export function findings(D) {
             <span class="chip"><b>${fmt.int(F.twssEpisodes)}</b> episodes in the transcript</span>
             <span class="chip"><b>+${fmt.int(F.twssWikiOnly)}</b> from the fan wiki</span>
           </div>
-          <div class="tk-chips tk-who-chips">${F.twssBy.map((t) => `<span class="chip">${dot(t.k)}${esc(t.k)} <b>${t.n}</b></span>`).join('')}</div>
+          <div class="tk-chips tk-who-chips">${F.twssBy.map((t) => { const h = charHref(D, t.k); return `<${h ? `a href="${h}"` : 'span'} class="chip">${dot(t.k)}${esc(t.k)} <b>${t.n}</b></${h ? 'a' : 'span'}>`; }).join('')}</div>
           <ul class="tk-callouts">${twssCallouts(D, list).map((c) => `<li>${c}</li>`).join('')}</ul>
-          <ol class="tk-twss" id="twss-list">${twssItems(D, list)}</ol>
+          <ol class="tk-twss" id="twss-items">${twssItems(D, list)}</ol>
           ${list.length > 8 ? `<button type="button" class="btn ghost mt" id="twss-more">Show all ${fmt.int(list.length)}</button>` : ''}
         </div>
       </div>
@@ -837,14 +1035,14 @@ export function findings(D) {
         <h2>Are the hour-long episodes better?</h2>
         <span class="verdict yes">Yes, by a lot</span>
         <div class="prose mt">
-          <p>${F.hour.nA} hour-long episodes have one IMDb score each. They average <strong>${F.hour.meanA.toFixed(2)}</strong> against <strong>${F.hour.meanB.toFixed(2)}</strong> for everything else, a gap of ${(F.hour.meanA - F.hour.meanB).toFixed(2)}. On ratings, that’s a bigger gap than Michael leaving (${(M.meanA - M.meanB).toFixed(2)}).</p>
-          <p>Part of it is timing: ${F.hourMichael.nA} of the ${F.hour.nA} aired before Michael left, when everything rated higher. Compare only episodes up to <em>${esc(bye.t)}</em> and the hour-longs still come out ${(F.hourMichael.meanA - F.hourMichael.meanB).toFixed(2)} ahead (${pEq(F.hourMichael.p)}).</p>
+          <p><a href="${ranked('hour=1')}">${F.hour.nA} hour-long episodes</a> have one IMDb score each. They average <strong>${F.hour.meanA.toFixed(2)}</strong> against <strong>${F.hour.meanB.toFixed(2)}</strong> for everything else, a gap of ${(F.hour.meanA - F.hour.meanB).toFixed(2)}. On ratings, that’s a bigger gap than <a href="${here('michael')}">Michael leaving</a> (${(M.meanA - M.meanB).toFixed(2)}).</p>
+          <p>Part of it is timing: ${F.hourMichael.nA} of the ${F.hour.nA} aired before ${charA(D, 'Michael')} left, when everything rated higher. Compare only episodes up to ${ttl(bye)} and the hour-longs still come out ${(F.hourMichael.meanA - F.hourMichael.meanB).toFixed(2)} ahead (${pEq(F.hourMichael.p)}).</p>
           <p>This data can’t tell the extra time apart from the occasion. ${cap(nw(used.size))} of the ${nw(hours.length)} were occasions: ${and(occasions)}.${otherHours.length ? ` The other ${otherHours.length === 1 ? 'one is' : `${nw(otherHours.length)} are`} ${and(otherHours.map(ttl))}${/\.$/.test(otherHours[otherHours.length - 1].t) ? '' : '.'}` : ''}</p>
           <div class="tk-chips tk-ep-chips">${hours.map((e) => `<a class="chip" href="#/episode/${e.id}">${esc(e.t)} <b>${e.r.toFixed(1)}</b></a>`).join('')}</div>
         </div>
         <div class="explain"><b>The check.</b> ${pEq(F.hour.p)}. ${F.hour.nA} episodes is a small group, but the gap is big enough to survive it.</div>
       </div>
-      <div><div class="card"><h3 class="card-title">Hour-long episodes against the rest</h3><p class="card-sub"><em>Niagara</em> and <em>The Delivery</em> aired as one hour each but are rated as two halves, so they count as half-hours here.</p><div id="f-h1"></div></div></div>
+      <div><div class="card"><h3 class="card-title">Hour-long episodes against the rest</h3><p class="card-sub">${part1('Niagara')} and ${part1('The Delivery')} aired as one hour each but are rated as two halves, so they count as half-hours here.</p><div id="f-h1"></div></div></div>
     </section>
 
     <section class="finding" id="andy" data-sec="Andy">
@@ -853,8 +1051,8 @@ export function findings(D) {
         <h2>Is Andy why the later seasons rated lower?</h2>
         <span class="verdict no">Mostly no</span>
         <div class="prose mt">
-          <p>Across every episode Andy is in, the more of the episode he talks, the lower it rated. The correlation is ${R}<strong>${fmt.num(andy.all.r)}</strong>, which is a lot for TV data.</p>
-          <p>But his big episodes are in seasons 8 and 9, when everything rated lower. Look inside each era separately and it mostly disappears: ${R}${fmt.num(andy.early.r)} in seasons 1 to 7, ${R}${fmt.num(andy.late.r)} in 8 and 9, and ${andy.early.p >= 0.05 && andy.late.p >= 0.05 ? 'neither passes the test' : 'only one passes the test'}.</p>
+          <p>Across every episode ${charA(D, 'Andy')} is in, the more of the episode he talks, the lower it rated. The correlation is ${R}<strong>${fmt.num(andy.all.r)}</strong>, which is a lot for TV data.</p>
+          <p>But his big episodes are in seasons <a class="tk-n" href="#/season/8">8</a> and <a class="tk-n" href="#/season/9">9</a>, when everything rated lower. Look inside each era separately and it mostly disappears: ${R}${fmt.num(andy.early.r)} in <a href="${ranked('s=1,2,3,4,5,6,7')}">seasons 1 to 7</a>, ${R}${fmt.num(andy.late.r)} in <a href="${ranked('s=8,9')}">8 and 9</a>, and ${andy.early.p >= 0.05 && andy.late.p >= 0.05 ? 'neither passes the test' : 'only one passes the test'}.</p>
           <p>So Andy talks a lot in a period that rated badly. That’s not the same as Andy making it rate badly.</p>
         </div>
         <div class="explain"><b>Why this matters.</b> It’s the “that’s what she said” trap the other way round: when two things both depend on the era, they look related even when they aren’t.</div>
@@ -875,8 +1073,8 @@ export function findings(D) {
           <p class="small muted">${F.holiday.nA} episodes, ${pEq(F.holiday.p)}. If anything a shade lower, and well inside the noise.</p>
           <details class="tk-more"><summary>Which ${F.holiday.nA}</summary><p class="small">${holidays.map((e) => `<a href="#/episode/${e.id}">${esc(e.t)}</a>`).join(' · ')}</p></details></div>
         <div class="card"><h3 class="card-title">Longer scripts</h3><p class="card-sub">Lines per episode against rating, half-hours only.</p><div class="stat-value">${R}${fmt.num(F.linesCorr.r)}</div><p class="small muted">${pEq(F.linesCorr.p)}. A busier script isn’t a better one.</p></div>
-        <div class="card"><h3 class="card-title">Bigger casts</h3><p class="card-sub">Different speakers per half-hour against rating.</p><div class="stat-value">${R}${fmt.num(F.speakersCorr.r)}</div><p class="small muted">${pEq(F.speakersCorr.p)}, and that’s the era. Half-hours through <em>${esc(bye.t)}</em> have ${fmt.dec(mean(castA, (e) => e.speakers))} speakers on average and rate ${mean(castA, (e) => e.r).toFixed(2)}. After it, ${fmt.dec(mean(castB, (e) => e.speakers))} speakers and ${mean(castB, (e) => e.r).toFixed(2)}. Inside each season it’s ${R}${fmt.num(F.speakersWithin.r)} (${pEq(F.speakersWithin.p)}), which is nothing.</p></div>
-        <div class="card"><h3 class="card-title">Michael’s share of lines</h3><p class="card-sub">Through <em>${esc(bye.t)}</em>.</p><div class="stat-value">${R}${fmt.num(F.michaelShareCorr.r)}</div><p class="small muted">${pEq(F.michaelShareCorr.p)}. See finding one.</p></div>
+        <div class="card"><h3 class="card-title">Bigger casts</h3><p class="card-sub">Different speakers per half-hour against rating.</p><div class="stat-value">${R}${fmt.num(F.speakersCorr.r)}</div><p class="small muted">${pEq(F.speakersCorr.p)}, and that’s the era. Half-hours through ${ttl(bye)} have ${fmt.dec(mean(castA, (e) => e.speakers))} speakers on average and rate ${mean(castA, (e) => e.r).toFixed(2)}. After it, ${fmt.dec(mean(castB, (e) => e.speakers))} speakers and ${mean(castB, (e) => e.r).toFixed(2)}. Inside each season it’s ${R}${fmt.num(F.speakersWithin.r)} (${pEq(F.speakersWithin.p)}), which is nothing.</p></div>
+        <div class="card"><h3 class="card-title">Michael’s share of lines</h3><p class="card-sub">Through ${ttl(bye)}.</p><div class="stat-value">${R}${fmt.num(F.michaelShareCorr.r)}</div><p class="small muted">${pEq(F.michaelShareCorr.p)}. <a href="${here('michael')}">See finding one</a>.</p></div>
       </div>
     </section>
     </div>`,
@@ -905,13 +1103,35 @@ export function findings(D) {
         drawT(b.dataset.v);
       }));
       drawT('all');
-      $('#twss-more')?.addEventListener('click', (ev) => {
-        $('#twss-list').classList.add('all');
-        ev.currentTarget.remove();
+      // #/findings@twss-list means the whole list. Arriving by that address opens it in full, and so does any link to
+      // it followed from this page (the jump bar, the "32 lines" link, search), which only scrolls and never redraws.
+      const twCard = $('#twss-list');
+      const twAll = (focus) => {
+        const ol = $('#twss-items');
+        if (!ol || ol.classList.contains('all')) return;
+        ol.classList.add('all');
+        $('#twss-more')?.remove();
         // The button is gone, so focus goes to the first joke it revealed.
-        const first = $('#twss-list .tk-extra');
+        const first = focus ? $('.tk-extra', ol) : null;
         if (first) { first.tabIndex = -1; first.focus({ preventScroll: true }); }
+      };
+      const wantsList = () => /@twss-list$/.test(location.hash);
+      // Opened by hand, it's noted on this history entry, so Back from one of its episodes finds it still open.
+      $('#twss-more')?.addEventListener('click', () => {
+        twAll(true);
+        try { history.replaceState({ ...(history.state || {}), twAll: true }, ''); } catch (err) { /* Safari rations replaceState */ }
       });
+      if (wantsList() || history.state?.twAll) twAll();
+      const onClick = (ev) => {
+        if (!twCard.isConnected) { document.removeEventListener('click', onClick, true); return; }
+        if (ev.target.closest?.('a[href$="@twss-list"]')) twAll();
+      };
+      const onHash = () => {
+        if (!twCard.isConnected) { removeEventListener('hashchange', onHash); return; }
+        if (wantsList()) twAll();
+      };
+      document.addEventListener('click', onClick, true);
+      addEventListener('hashchange', onHash);
 
       // A sticky column taller than the window would keep its end out of sight while the charts scroll past.
       // Those stick by their bottom edge instead: they scroll until the end shows, then hold. style.css sticks at 90px.
