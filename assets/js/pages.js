@@ -876,6 +876,126 @@ export function episodes(D) {
 
 // ---------------------------------------------------------------- one episode
 
+// Clips are the show's own YouTube uploads, listed per episode in data/clips.json and played by YouTube's player.
+// The list is asked for once, when this file loads. A failed request isn't kept, so the next episode page asks again.
+const CLIP_ID = /^[A-Za-z0-9_-]{11}$/;
+let clipEps = null; // { "<episode id>": [{ id, t }, ...] } once the file is in
+let clipP = null;
+let clipMiss = false; // the last request failed: until one works, pages show the link out and don't hold room for tiles
+function clipsFile() {
+  clipP ??= fetch('data/clips.json').then((r) => {
+    if (!r.ok) throw new Error(`clips ${r.status}`);
+    return r.json();
+  }).then((j) => {
+    clipEps = j && typeof j.eps === 'object' && j.eps ? j.eps : {};
+    clipMiss = false;
+    return clipEps;
+  }).catch((err) => { clipP = null; clipMiss = true; throw err; });
+  return clipP;
+}
+clipsFile().catch(() => {});
+
+// Up to three per episode. An id that isn't shaped like a YouTube id is dropped here and never reaches the page.
+const clipsOf = (id) => (Array.isArray(clipEps?.[id]) ? clipEps[id] : [])
+  .filter((c) => c && typeof c.id === 'string' && CLIP_ID.test(c.id) && typeof c.t === 'string' && c.t.trim())
+  .slice(0, 3);
+
+const CLIP_OUT = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5h5v5M9.5 2.5l-7 7"/></svg>';
+// The thumbnail is all that comes from YouTube until the button is pressed. It is 4:3 with black bars; the CSS crops it.
+const clipTile = (c, i) => `<li class="clip" style="--d:${(i * 0.07).toFixed(2)}s">
+        <div class="clip-box">
+          <img src="https://i.ytimg.com/vi/${c.id}/hqdefault.jpg" alt="" width="480" height="360" loading="lazy" decoding="async">
+          <button type="button" class="clip-play" data-clip="${c.id}" aria-label="Play: ${esc(c.t)}"></button>
+          <span class="clip-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 5.2v13.6L19.6 12z"/></svg></span>
+        </div>
+        <p class="clip-t">${esc(c.t)}</p>
+        <a class="clip-out" href="https://www.youtube.com/watch?v=${c.id}" target="_blank" rel="noopener" aria-label="On YouTube: ${esc(c.t)}">On YouTube${CLIP_OUT}</a>
+      </li>`;
+const CLIP_HEAD = '<h3 class="card-title">Clips</h3><p class="card-sub">From the show’s own YouTube channel.</p>';
+const CLIP_WAIT = `<ul class="clip-set" aria-hidden="true">${'<li class="clip clip-wait"><div class="clip-box"></div><p class="clip-t">&nbsp;</p><span class="clip-out">&nbsp;</span></li>'.repeat(3)}</ul>`;
+const clipsOut = (e) => `<p class="clip-none"><a class="clip-out" href="${esc(`https://www.youtube.com/results?search_query=${encodeURIComponent(`The Office US ${e.t}`)}`)}" target="_blank" rel="noopener">Clips of this one on YouTube${CLIP_OUT}</a></p>`;
+
+// What the block holds: the tiles; one link out when the episode has none or the list didn't load; or, while the
+// list is still on its way, tile-shaped placeholders that keep the room.
+function clipsInner(e) {
+  if (!clipEps) return clipMiss ? clipsOut(e) : CLIP_HEAD + CLIP_WAIT;
+  const list = clipsOf(e.id);
+  return list.length ? `${CLIP_HEAD}<ul class="clip-set rv" role="list">${list.map(clipTile).join('')}</ul>` : clipsOut(e);
+}
+const clipsSection = (e) => `<section class="wrap ep-clips" id="clips"${clipEps || clipMiss ? '' : ' aria-busy="true"'}>${clipsInner(e)}</section>`;
+
+// Put every player in the block back to its thumbnail.
+function clipsStop(sec) {
+  $$('.clip-box.is-on', sec).forEach((box) => {
+    box.querySelector('iframe')?.remove();
+    box.classList.remove('is-on', 'is-ready');
+    const b = box.querySelector('.clip-play');
+    if (b) b.hidden = false;
+  });
+}
+
+// The player goes into the thumbnail's own box, over the picture, so nothing on the page moves. One at a time.
+function clipPlay(sec, btn) {
+  const id = btn.dataset.clip;
+  const box = btn.closest('.clip-box');
+  if (!box || !CLIP_ID.test(id)) return;
+  clipsStop(sec);
+  const f = document.createElement('iframe');
+  f.setAttribute('title', btn.closest('.clip')?.querySelector('.clip-t')?.textContent || 'Clip');
+  f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+  f.setAttribute('allowfullscreen', '');
+  // Without a referrer YouTube answers "Video player configuration error".
+  f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+  f.setAttribute('loading', 'lazy');
+  const ready = () => { if (f.isConnected) box.classList.add('is-ready'); };
+  f.addEventListener('load', ready, { once: true });
+  setTimeout(ready, 12000); // a frame that never reports back doesn't leave the ring turning
+  f.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+  btn.hidden = true;
+  box.classList.add('is-on');
+  box.append(f);
+  // The button that had the focus is gone, so the focus goes to the player that took its place.
+  f.focus({ preventScroll: true });
+  // On a phone the tiles are a sideways rail. One pressed while it is half off the edge slides fully in.
+  const rail = box.closest('.clip-set'), tile = box.closest('.clip');
+  if (rail && tile && rail.scrollWidth > rail.clientWidth + 1) {
+    const r = rail.getBoundingClientRect(), t = tile.getBoundingClientRect();
+    const pad = parseFloat(getComputedStyle(rail).paddingLeft) || 0;
+    if (t.left < r.left + pad - 1 || t.right > r.right - pad + 1) {
+      rail.scrollTo({ left: rail.scrollLeft + t.left - r.left - pad, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+  }
+}
+
+// Runs after the page is drawn: the play buttons, and the list itself if it hadn't arrived when the page was drawn.
+function clipsWire(sec, e) {
+  if (!sec) return;
+  sec.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.clip-play');
+    if (b) clipPlay(sec, b);
+  });
+  // iPhone Safari only shows a pressed (:active) state under a finger when something listens for the touch.
+  sec.addEventListener('touchstart', () => {}, { passive: true });
+  if (clipEps) return;
+  const had = clipsInner(e); // what episode() just drew
+  const redraw = () => {
+    if (!sec.isConnected) return;
+    sec.removeAttribute('aria-busy');
+    const html = clipsInner(e);
+    if (html === had) return;
+    // A reader who has already scrolled past the block keeps their place when its height changes.
+    const below = sec.nextElementSibling;
+    const y0 = below ? below.getBoundingClientRect().top : 0;
+    sec.innerHTML = html;
+    if (below && y0 < 64) {
+      const dy = below.getBoundingClientRect().top - y0;
+      if (Math.abs(dy) >= 1) window.scrollBy({ top: dy, behavior: 'instant' });
+    }
+    requestAnimationFrame(() => $$('.rv', sec).forEach((n) => n.classList.add('in')));
+  };
+  clipsFile().then(redraw, redraw);
+}
+
 export function episode(D, id, lines) {
   const E = D.episodes;
   const e = E[id];
@@ -959,6 +1079,7 @@ export function episode(D, id, lines) {
         <div class="stat"><div class="stat-label">${e.twss ? '<a href="#/findings@twss">That’s what she said</a>' : 'That’s what she said'}</div><div class="stat-value">${small(e.twss || 0)}</div><div class="stat-note">${twssNote}</div></div>
       </div>
     </section>
+    ${clipsSection(e)}
     <section class="section wrap">
       <div class="grid g-7-5 ep-cols">
         <div class="ep-col">
@@ -1018,6 +1139,7 @@ export function episode(D, id, lines) {
       barcode(bc, e, D);
       linkNames();
       contextChart($('#ctx'), sEps, e);
+      clipsWire($('.ep-clips'), e);
       // Held now, not looked up when the script arrives: every episode page reuses these ids, so a slow
       // season file would otherwise write into whichever episode is showing by then.
       const out = $('#cold'), more = $('#cold-more'), cols = $$('.ep-col');
