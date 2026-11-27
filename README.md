@@ -33,6 +33,12 @@ python3 scripts/build_quizbank.py
 node scripts/check_quiz.mjs
 ```
 
+Episode pages play clips from the show's own YouTube channel. No video is stored here. `scripts/clips_picks.json` lists 328 clips matched to episodes, each with the reason it belongs there, and `build_clips.py` keeps the ones YouTube says are from the official channel, can be embedded and aren't vertical Shorts. That leaves 316 clips on 171 of the 188 episodes; the other 17 get a link to a YouTube search. Run it again and anything taken down since drops off.
+
+```
+python3 scripts/build_clips.py
+```
+
 `raw/schrute.csv` is 11 MB, so it isn't committed. `raw/episodes_2023.json` came out of the 2023 report with `scripts/extract_2023.py`.
 
 ## Corrections

@@ -2188,6 +2188,120 @@ body { padding-top: 63px; }
 .ep-cast a.chip:hover { background: var(--line); color: var(--ink); }
 @media (max-width: 620px) { .ep-cast { gap: 8px; } .ep-cast a.chip { min-height: 38px; padding: 6px 13px; } }
 
+/* ================================================================ episode clips */
+
+/* The clips block on an episode page, between the stats row and the charts. Each tile is a thumbnail with a play
+   button over it; pressed, YouTube's player takes the thumbnail's place in the same 16:9 box. */
+.ep-clips > .card-title { margin-top: clamp(26px, 4vw, 44px); }
+.ep-clips > .card-sub { margin-bottom: 14px; }
+
+/* Always thirds on a wide screen: one clip or two leave the rest of the row empty, so a tile is the same size on
+   every episode and a lone clip is never a full-width video. */
+.clip-set { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.clip { min-width: 0; }
+/* The row arrives with the page's reveal (.rv on the list, so tiles still off the edge of a phone's rail don't
+   wait to be swiped to), and the tiles fade in one after another inside it. */
+.clip-set.rv .clip { opacity: 0; transition: opacity .6s var(--ease) var(--d, 0s); }
+.clip-set.rv.in .clip { opacity: 1; }
+
+.clip-box {
+  position: relative; aspect-ratio: 16 / 9; border-radius: var(--r); overflow: hidden; isolation: isolate;
+  background: #0d0d10; box-shadow: var(--shadow);
+}
+@supports not (aspect-ratio: 1) { .clip-box::before { content: ""; display: block; padding-top: 56.25%; } }
+.clip-box img, .clip-box iframe, .clip-play { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* YouTube's hqdefault is 4:3 with black bars above and below. Cover crops it to the 16:9 picture inside. */
+.clip-box img { object-fit: cover; transition: transform .28s var(--ease); }
+.clip-play { z-index: 1; border: 0; padding: 0; margin: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.clip-mark {
+  position: absolute; z-index: 2; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%;
+  display: grid; place-items: center; pointer-events: none; background: rgb(13 13 16 / 74%); color: #fff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 16%); transition: transform .16s var(--ease), background .2s, color .2s, opacity .2s;
+}
+.clip-mark svg { width: 26px; height: 26px; fill: currentColor; transition: opacity .15s; }
+/* The player sits over the picture. Until YouTube has painted, the picture and a turning ring show through it. */
+.clip-box iframe { z-index: 3; border: 0; color-scheme: light; }
+
+/* Under a mouse the picture eases up inside its box: a little larger and a little higher. The box itself never
+   moves, so the player that takes the picture's place lands exactly where the picture was. */
+@media (hover: hover) {
+  .clip-box:hover img { transform: translateY(-1.2%) scale(1.045); }
+  .clip-box:not(.is-on):hover .clip-mark { background: var(--accent); color: var(--accent-ink); transform: scale(1.06); }
+}
+.clip-box .clip-play:active ~ .clip-mark { transform: scale(.88); }
+/* The ring goes inside the picture, where the box can't clip it; where :has works it goes round the whole tile. */
+.clip-play:focus-visible { outline: 3px solid #fff; outline-offset: -6px; border-radius: calc(var(--r) - 5px); }
+@supports selector(:has(a)) {
+  .clip-play:focus-visible { outline: none; }
+  .clip-box:has(.clip-play:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+}
+
+.clip-box.is-on .clip-mark svg { opacity: 0; }
+.clip-box.is-on .clip-mark::after {
+  content: ""; position: absolute; inset: 15px; border-radius: 50%; border: 3px solid rgb(255 255 255 / 28%); border-top-color: #fff;
+  animation: clip-spin .8s linear infinite;
+}
+.clip-box.is-on.is-ready .clip-mark { opacity: 0; }
+/* Once the player is in, the picture under it goes: left there, a hairline of it shows along the player's edge
+   wherever the box lands on a half pixel. */
+.clip-box.is-on.is-ready img { visibility: hidden; }
+@keyframes clip-spin { to { transform: rotate(1turn); } }
+
+.clip-t { font: 600 14.5px/1.35 var(--sans); letter-spacing: -.005em; margin: 10px 0 0; text-wrap: balance; overflow-wrap: anywhere; }
+/* Small text with a thumb's worth of tap area: the ::after reaches 13px above and below the words, so the link
+   takes a 44px tap while its own box, and its focus ring, stay the size of the text. */
+.clip-out {
+  position: relative; display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 13px; line-height: 18px;
+  color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px;
+  transition: color .2s, text-decoration-color .2s;
+}
+.clip-out::after { content: ""; position: absolute; inset: -13px -10px -13px -4px; }
+.clip-out:hover { color: var(--ink); text-decoration-color: currentColor; }
+.clip-out svg { width: 10px; height: 10px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* No clips for this episode, or the list didn't load: one line, no box. */
+.clip-none { margin: 16px 0 0; line-height: 18px; }
+.clip-none .clip-out { margin-top: 0; }
+
+/* While the list is on its way: the same boxes with nothing in them, so the charts below don't move when it lands.
+   The title and link keep their real metrics (a non-breaking space each) and a grey bar is painted where the words go. */
+.clip-wait { animation: clip-wait .9s ease-in-out infinite alternate; }
+.clip-wait .clip-box { background: var(--line); box-shadow: none; }
+.clip-wait .clip-t { background: linear-gradient(var(--line), var(--line)) left center / 62% 11px no-repeat; }
+.clip-wait .clip-out { min-width: 64px; text-decoration: none; background: linear-gradient(var(--line), var(--line)) left center / 64px 9px no-repeat; }
+.clip-wait .clip-out::after { content: none; }
+@keyframes clip-wait { to { opacity: .5; } }
+
+/* Phones, tablets and narrow windows: one rail that only moves sideways, the next tile showing at the edge. A lone
+   clip is full width. Thirds would make a player too small to watch here. */
+@media (max-width: 900px), (max-width: 1139px) and (hover: none), (max-width: 1139px) and (pointer: coarse) {
+  .clip-set {
+    display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: var(--pad); scrollbar-width: none;
+    padding: 6px var(--pad) 14px; margin: -6px calc(-1 * var(--pad)) -14px;
+  }
+  .clip-set::-webkit-scrollbar { display: none; }
+  .clip { flex: 0 0 min(86%, 420px); scroll-snap-align: start; }
+  .clip:only-child { flex-basis: min(100%, 560px); }
+  .clip-mark { width: 54px; height: 54px; margin: -27px 0 0 -27px; }
+}
+/* A mouse can't swipe, so a narrow window on a computer gets a thin scrollbar to drag. */
+@media (max-width: 900px) and (hover: hover) and (pointer: fine) {
+  .clip-set { scrollbar-width: thin; }
+  .clip-set::-webkit-scrollbar { display: block; height: 8px; }
+  .clip-set::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clip-set.rv .clip { opacity: 1; }
+  .clip-box img, .clip-box:hover img, .clip-box .clip-mark, .clip-box:not(.is-on):hover .clip-mark, .clip-box .clip-play:active ~ .clip-mark { transform: none; }
+  .clip-box.is-on .clip-mark svg { opacity: .45; }
+  .clip-box.is-on .clip-mark::after, .clip-wait { animation: none; }
+  .clip-box.is-on .clip-mark::after { content: none; }
+}
+
+@media print { .ep-clips { display: none; } }
+
 /* ================================================================ people pages: wayfinding (assets/js/people.js)
    Characters index, character, crew and person pages. */
 
